@@ -1,0 +1,6 @@
+{
+  "name": "DILS Dhaka - Integrated LMS & Institute Management Ecosystem",
+  "description": "Enterprise LMS, Multi-Language Course Catalog, Student & Instructor Portals, Admission CRM, Exam Engine with Auto-Gradebook, and Dynamic QR Verifiable Certificates for Dhaka International Language School.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
