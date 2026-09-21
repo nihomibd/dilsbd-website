@@ -258,8 +258,8 @@ export const PortalAdminCRM: React.FC<PortalAdminCRMProps> = ({
               >
                 <option value="Japanese JLPT N5 (Student Visa)">Japanese JLPT N5 (Student Visa)</option>
                 <option value="Japanese JLPT N4 (SSW Work Visa)">Japanese JLPT N4 (SSW Work Visa)</option>
-                <option value="German Goethe A1 (Spouse Visa)">German Goethe A1 (Spouse Visa)</option>
-                <option value="IELTS Academic Masterclass">IELTS Academic Masterclass</option>
+                <option value="Japanese JLPT N3 (Career & Engineering)">Japanese JLPT N3 (Career & Engineering)</option>
+                <option value="Spoken Japanese & Embassy Interview">Spoken Japanese & Embassy Interview</option>
               </select>
               <button
                 type="submit"

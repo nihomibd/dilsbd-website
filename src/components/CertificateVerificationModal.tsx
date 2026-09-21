@@ -50,25 +50,232 @@ export const CertificateVerificationModal: React.FC<CertificateVerificationModal
     setDownloadError(null);
   };
 
+  const drawCertificateToCanvas = (
+    cert: CertificateRecord,
+    qrUrl: string
+  ): Promise<string> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1600;
+      canvas.height = 1130;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve('');
+        return;
+      }
+
+      // Background parchment
+      const bgGrad = ctx.createLinearGradient(0, 0, 1600, 1130);
+      bgGrad.addColorStop(0, '#fefce8');
+      bgGrad.addColorStop(0.5, '#ffffff');
+      bgGrad.addColorStop(1, '#fef9c3');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, 1600, 1130);
+
+      // Double border
+      ctx.strokeStyle = '#d97706';
+      ctx.lineWidth = 14;
+      ctx.strokeRect(30, 30, 1540, 1070);
+
+      ctx.strokeStyle = '#b45309';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(48, 48, 1504, 1034);
+
+      // Corner decorative markers
+      ctx.font = 'bold 16px monospace';
+      ctx.fillStyle = '#92400e';
+      ctx.fillText('DILS-VERIFIED', 65, 80);
+      ctx.fillText(cert.certificateId, 1300, 80);
+
+      // Large Center Watermark "DILS"
+      ctx.save();
+      ctx.font = '900 180px sans-serif';
+      ctx.fillStyle = 'rgba(180, 83, 9, 0.05)';
+      ctx.textAlign = 'center';
+      ctx.fillText('DILS', 800, 620);
+      ctx.restore();
+
+      // Red Badge Logo Header
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath();
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(750, 100, 100, 90, 20);
+      } else {
+        ctx.rect(750, 100, 100, 90);
+      }
+      ctx.fill();
+
+      ctx.font = '900 36px sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.fillText('DILS', 800, 158);
+
+      // School Name
+      ctx.font = '900 46px sans-serif';
+      ctx.fillStyle = '#0f172a';
+      ctx.fillText('Dhaka International Language School', 800, 250);
+
+      // Subtitle
+      ctx.font = '600 18px sans-serif';
+      ctx.fillStyle = '#475569';
+      ctx.fillText('APPROVED JAPANESE LANGUAGE TRAINING & VISA CENTER • FARMGATE CAMPUS', 800, 285);
+
+      // Gold Pill
+      ctx.fillStyle = '#fef3c7';
+      ctx.beginPath();
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(480, 320, 640, 44, 22);
+      } else {
+        ctx.rect(480, 320, 640, 44);
+      }
+      ctx.fill();
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.font = 'bold 17px sans-serif';
+      ctx.fillStyle = '#92400e';
+      ctx.fillText('OFFICIAL CERTIFICATE OF ACADEMIC ACHIEVEMENT', 800, 348);
+
+      // "This is to officially certify that"
+      ctx.font = 'italic 20px serif';
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('This is to officially certify that', 800, 420);
+
+      // Student Name
+      ctx.font = '900 52px sans-serif';
+      ctx.fillStyle = '#991b1b';
+      ctx.fillText(cert.studentName.toUpperCase(), 800, 485);
+
+      // Paragraph
+      ctx.font = '18px sans-serif';
+      ctx.fillStyle = '#334155';
+      ctx.fillText('having successfully satisfied all academic assessments, 150-hour syllabus requirements,', 800, 545);
+      ctx.fillText('and examination standards, is hereby awarded this accredited certificate of proficiency in:', 800, 575);
+
+      // Course Name
+      ctx.font = 'bold 36px sans-serif';
+      ctx.fillStyle = '#0f172a';
+      ctx.fillText(cert.courseName, 800, 650);
+
+      // Grade & GPA pill
+      ctx.fillStyle = '#fef3c7';
+      ctx.beginPath();
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(460, 685, 680, 46, 12);
+      } else {
+        ctx.rect(460, 685, 680, 46);
+      }
+      ctx.fill();
+      ctx.strokeStyle = '#f59e0b';
+      ctx.stroke();
+
+      ctx.font = 'bold 20px sans-serif';
+      ctx.fillStyle = '#78350f';
+      ctx.fillText(`Graduated with: ${cert.grade}  |  GPA: ${cert.gpa.toFixed(2)} / 4.00`, 800, 716);
+
+      // Issue Date
+      ctx.font = '16px monospace';
+      ctx.fillStyle = '#64748b';
+      ctx.fillText(`Issued: ${cert.issueDate}  •  Status: ${cert.status}`, 800, 770);
+
+      // Bottom Signatures & QR Code
+      // Signature 1: Instructor
+      ctx.font = 'italic bold 24px serif';
+      ctx.fillStyle = '#1e293b';
+      ctx.fillText('Tanvir Kabir Biplob', 260, 930);
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(120, 945);
+      ctx.lineTo(400, 945);
+      ctx.stroke();
+      ctx.font = 'bold 16px sans-serif';
+      ctx.fillStyle = '#0f172a';
+      ctx.fillText(cert.instructorName, 260, 970);
+      ctx.font = '14px sans-serif';
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('Head of Japanese Faculty (JLPT N2)', 260, 995);
+
+      // Signature 2: Director (Abdur Razzak)
+      ctx.font = 'italic bold 24px serif';
+      ctx.fillStyle = '#1e293b';
+      ctx.fillText('MD. Abdur Razzak', 1340, 930);
+      ctx.beginPath();
+      ctx.moveTo(1200, 945);
+      ctx.lineTo(1480, 945);
+      ctx.stroke();
+      ctx.font = 'bold 16px sans-serif';
+      ctx.fillStyle = '#0f172a';
+      ctx.fillText(cert.directorName, 1340, 970);
+      ctx.font = '14px sans-serif';
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('Managing Director (JLPT N1)', 1340, 995);
+
+      // Center QR Code
+      if (qrUrl) {
+        const qrImg = new Image();
+        qrImg.crossOrigin = 'anonymous';
+        qrImg.onload = () => {
+          ctx.drawImage(qrImg, 730, 840, 140, 140);
+          ctx.font = 'bold 12px monospace';
+          ctx.fillStyle = '#475569';
+          ctx.fillText('SCAN TO AUTHENTICATE', 800, 1005);
+          resolve(canvas.toDataURL('image/png'));
+        };
+        qrImg.onerror = () => {
+          resolve(canvas.toDataURL('image/png'));
+        };
+        qrImg.src = qrUrl;
+      } else {
+        resolve(canvas.toDataURL('image/png'));
+      }
+    });
+  };
+
   const handleDownloadCertificate = async () => {
-    const element = document.getElementById('dils-official-certificate');
-    if (!element) return;
+    if (!activeCert) return;
     setIsDownloading(true);
     setDownloadError(null);
     try {
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false
-      });
-      const link = document.createElement('a');
-      link.download = `${activeCert?.certificateId || 'DILS_Certificate'}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+      // First attempt: High-fidelity Canvas Direct Rendering (bypasses html2canvas oklab bugs)
+      const dataUrl = await drawCertificateToCanvas(activeCert, qrDataUrl);
+      if (dataUrl) {
+        const link = document.createElement('a');
+        link.download = `${activeCert.certificateId}.png`;
+        link.href = dataUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        return;
+      }
+
+      // Secondary fallback
+      const element = document.getElementById('dils-official-certificate');
+      if (element) {
+        const canvas = await html2canvas(element, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          logging: false
+        });
+        const link = document.createElement('a');
+        link.download = `${activeCert.certificateId}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      }
     } catch (err) {
-      console.error('Certificate download error:', err);
-      setDownloadError('সার্টিফিকেট ডাউনলোড করতে সাময়িক সমস্যা হয়েছে। স্ক্রিনশট বা রিফ্রেশ করে আবার চেষ্টা করুন।');
+      console.warn('Certificate canvas render, falling back:', err);
+      try {
+        const dataUrl = await drawCertificateToCanvas(activeCert, qrDataUrl);
+        const link = document.createElement('a');
+        link.download = `${activeCert.certificateId}.png`;
+        link.href = dataUrl;
+        link.click();
+      } catch (fallbackErr) {
+        console.error('Certificate download error:', fallbackErr);
+        setDownloadError('সার্টিফিকেট ডাউনলোড করতে সাময়িক সমস্যা হয়েছে।');
+      }
     } finally {
       setIsDownloading(false);
     }

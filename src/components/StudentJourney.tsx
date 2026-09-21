@@ -256,9 +256,15 @@ export const StudentJourney: React.FC<StudentJourneyProps> = ({
         </div>
       </div>
 
-      {/* 2. Visual Progression Stepper (Horizontal bar on desktop, clickable) */}
+      {/* 2. Visual Progression Stepper (Horizontal swipeable carousel on mobile, grid on desktop) */}
       <div className="relative z-10">
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
+        <div className="sm:hidden text-center pb-2">
+          <span className="text-[11px] font-mono text-slate-400 bg-slate-950/80 px-3 py-1 rounded-full border border-slate-800">
+            👈 ডানে-বামে সোয়াইপ করে ৫টি ধাপ দেখুন 👉
+          </span>
+        </div>
+
+        <div className="flex overflow-x-auto snap-x snap-mandatory sm:grid sm:grid-cols-5 gap-2.5 sm:gap-3 pb-2 sm:pb-0 scrollbar-none">
           {JOURNEY_STEPS.map((step, idx) => {
             const isSelected = activeStepIndex === idx;
             const isPast = activeStepIndex > idx;
@@ -267,7 +273,7 @@ export const StudentJourney: React.FC<StudentJourneyProps> = ({
               <button
                 key={step.id}
                 onClick={() => setActiveStepIndex(idx)}
-                className={`relative text-left p-3.5 sm:p-4 rounded-2xl transition-all duration-300 border flex flex-col justify-between group ${
+                className={`relative text-left p-3.5 sm:p-4 rounded-2xl transition-all duration-300 border flex flex-col justify-between group snap-start flex-shrink-0 min-w-[210px] sm:min-w-0 min-h-[44px] ${
                   isSelected
                     ? 'bg-slate-800/90 border-red-500 shadow-xl ring-2 ring-red-500/30 -translate-y-0.5'
                     : 'bg-slate-950/70 border-slate-800 hover:border-slate-700 hover:bg-slate-900/60'

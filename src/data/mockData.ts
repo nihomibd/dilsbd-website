@@ -81,108 +81,82 @@ export const INITIAL_COURSES: Course[] = [
     ]
   },
   {
-    id: 'c-ger-a1',
-    code: 'DILS-GER-01',
-    title: 'German Goethe-Zertifikat A1 (Spouse & Student Visa)',
-    titleBn: 'জার্মান ভাষা Goethe A1 (স্টুডেন্ট ও স্পাউস ভিসা)',
-    language: 'german',
-    level: 'Goethe A1 / CEFR',
-    price: 20000,
-    discountPrice: 15000,
-    duration: '3 Months (90 Hours)',
-    classesCount: 36,
-    instructorName: 'Frau Jannat Ara Akhi',
-    instructorTitle: 'Goethe C1 Certified, German Academic Counselor',
-    instructorPhoto: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&auto=format&fit=crop&q=80',
+    id: 'c-jp-n3',
+    code: 'DILS-JPN-03',
+    title: 'Japanese JLPT N3 Advanced Career Track',
+    titleBn: 'জাপানি ভাষা JLPT N3 উচ্চতর ক্যারিয়ার ট্র্যাক (জব ও স্কলারশিপ)',
+    language: 'japanese',
+    level: 'JLPT N3 / Business',
+    price: 26000,
+    discountPrice: 21000,
+    duration: '5 Months (160 Hours)',
+    classesCount: 60,
+    instructorName: 'Sensei MD. Abdur Razzak',
+    instructorTitle: 'Head of Japanese Department & Director (JLPT-N1 Certified)',
+    instructorPhoto: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
     featured: true,
-    description: 'Learn German from scratch. Covers alphabet, pronunciation, cases (Nominativ, Akkusativ, Dativ), Schreiben (Letter writing), Hören, and Goethe Institute A1 examination format.',
-    descriptionBn: 'জার্মান বর্ণমালা থেকে শুরু করে দৈনন্দিন কথোপকথন, চিঠিপত্র লেখা, শ্রুতি পরীক্ষা এবং গোয়েথে এ১ অফিসিয়াল পরীক্ষার সম্পূর্ণ প্রস্তুতি।',
+    description: 'Advanced course for university graduates and engineers. Covers 650+ Kanji, Japanese business documentation, newspaper reading, and direct Tokyo corporate interviews.',
+    descriptionBn: 'উচ্চতর ব্যাকরণ, ৬৫০+ কাঞ্জি, জাপানি সংবাদপত্র পঠন ও জাপানের আইটি এবং ইঞ্জিনিয়ারিং কোম্পানিতে সরাসরি চাকরির সুযোগ তৈরি। সার্বিক নির্দেশনায় রাজ্জাক স্যার (JLPT N1)।',
     syllabus: [
-      { week: 'Module 1', topic: 'Grundlagen (Basics)', modules: ['Alphabet, Numbers, Personal Pronouns', 'Verb Conjugation (sein, haben, regelmäßige Verben)', 'Greetings & introducing oneself'] },
-      { week: 'Module 2', topic: 'Alltag und Familie (Daily Life)', modules: ['Articles (der, die, das) & Negation (nicht, kein)', 'Akkusativ case & shopping vocabulary', 'Telling time & calendar appointments'] },
-      { week: 'Module 3', topic: 'Wohnen und Arbeit (Living & Working)', modules: ['Dativ prepositions & directions', 'Modal verbs (können, müssen, möchten)', 'Schreiben (Formal emails & SMS in German)'] },
-      { week: 'Module 4', topic: 'Goethe A1 Exam Simulation', modules: ['Hören (Listening tracks 1-3)', 'Lesen (Reading flyers & short notices)', 'Sprechen (Oral test parts 1, 2, 3) live drills'] }
+      { week: 'Month 1', topic: 'N3 Grammar Patterns & Nuances', modules: ['Advanced functional expressions (toshite, ni taisite)', 'Nuance distinction between similar grammar', 'Speed reading short articles'] },
+      { week: 'Month 2', topic: 'Business Keigo & Corporate Culture', modules: ['Kenjougo & Sonkeigo in business correspondence', 'Telephone etiquette & formal apology (Owabi)', 'Meishi exchange & business bowing'] },
+      { week: 'Month 3', topic: 'Essays, Reports & JLPT N3 Mock Exams', modules: ['Long passage comprehension (Dokkai)', 'Audio listening under real test conditions', 'Specialized terminology in IT/Engineering'] },
+      { week: 'Month 4', topic: 'Japan Company Interview Preparation', modules: ['Curriculum Vitae (Rirekisho) formatting', 'Direct interview Q&A coaching', 'Mock company selection interviews'] }
     ],
     batches: [
-      { id: 'b-ger-01', name: 'German Morning Cohort A1-1', days: 'Sun, Tue, Thu', time: '10:00 AM - 12:00 PM', room: 'Room 703 (Euro Wing)', seatsLeft: 5, totalSeats: 20, startDate: '2026-10-08' }
+      { id: 'b-jp3-01', name: 'N3 Executive Evening (Online + Farmgate)', days: 'Sun, Tue, Thu', time: '08:00 PM - 10:00 PM', room: 'Executive Room 705', seatsLeft: 5, totalSeats: 20, startDate: '2026-10-12' }
     ]
   },
   {
-    id: 'c-ielts-master',
-    code: 'DILS-ENG-01',
-    title: 'IELTS Comprehensive 7.5+ Band Score Masterclass',
-    titleBn: 'আইইএলটিএস ব্যান্ড ৭.৫+ মাস্টারক্লাস (UK/USA/Canada)',
-    language: 'ielts',
-    level: 'Target Band 7.0 - 8.5',
+    id: 'c-jp-spoken',
+    code: 'DILS-JPN-04',
+    title: 'Spoken Japanese & Japan Embassy Interview Masterclass',
+    titleBn: 'স্পোকেন জাপানিজ ও এম্বাসি মক ইন্টারভিউ মাস্টারক্লাস',
+    language: 'japanese',
+    level: 'Executive Spoken',
     price: 16000,
     discountPrice: 12000,
-    duration: '2.5 Months (75 Hours)',
+    duration: '2.5 Months (70 Hours)',
     classesCount: 30,
-    instructorName: 'Prof. Faisal Mahmud',
-    instructorTitle: 'IELTS Band 8.5, Former British Council Trainer',
-    instructorPhoto: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80',
+    instructorName: 'Tanvir Kabir Biplob & Native Japanese Advisor',
+    instructorTitle: 'Japanese Language Specialist (JLPT-N2 Certified)',
+    instructorPhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
     featured: true,
-    description: 'Master all 4 modules (Listening, Reading, Writing Task 1 & 2, Speaking). Includes 10 full Mock Tests with personal 1-on-1 assessment and feedback.',
-    descriptionBn: 'লিসেনিং, রিডিং, রাইটিং টাস্ক ১ ও ২ এবং স্পিকিং - ৪টি মডিউলের গভীর টেকনিক, ১০টি ফুল মক টেস্ট ও ওয়ান-টু-ওয়ান ফিডব্যাক।',
+    description: 'Master practical daily speech, native listening speed, airport conversation, and 3x full-dress one-on-one Japan Embassy visa mock interviews.',
+    descriptionBn: 'বাস্তব জীবনের কথোপকথন, নেটিভ লিসেনিং স্পিড এবং ঢাকায় জাপান দূতাবাসের জন্য ৩টি ওয়ান-টু-ওয়ান পূর্ণাঙ্গ মক ইন্টারভিউ।',
     syllabus: [
-      { week: 'Module 1', topic: 'Listening & Reading Mastery', modules: ['Prediction strategies in Listening Sections 1-4', 'Skimming & Scanning in Academic Reading', 'True/False/Not Given & Heading matching'] },
-      { week: 'Module 2', topic: 'Writing Task 1 & Task 2', modules: ['Bar charts, Line graphs, Process diagrams', 'Opinion, Discussion & Problem-Solution essays', 'High-band vocabulary and complex grammatical structures'] },
-      { week: 'Module 3', topic: 'Speaking Fluency & Mock Assessments', modules: ['Part 1 conversational ease', 'Part 2 Cue Card structure (PPF method)', 'Part 3 abstract reasoning & idiomatic language', '1-on-1 Mock tests with video feedback'] }
+      { week: 'Module 1', topic: 'Pronunciation, Pitch Accent & Fluency', modules: ['Pitch accent rules & natural rhythm', 'Everyday survival phrases for Tokyo life', 'Overcoming speaking hesitation'] },
+      { week: 'Module 2', topic: 'Dormitory, Baito (Part-Time Job) & Shopping Dialogue', modules: ['How to apply for part-time jobs (Baito)', 'Convenience store (Konbini) & train station Japanese', 'Talking to landlords & emergency calling'] },
+      { week: 'Module 3', topic: 'Japan Embassy 1-on-1 Mock Interview Drills', modules: ['Statement of Purpose verbal defense', 'Why Japan? Why this school? questions', '3 Timed video-recorded mock interview panels'] }
     ],
     batches: [
-      { id: 'b-ielts-01', name: 'IELTS Weekend Special Batch', days: 'Fri & Sat', time: '10:00 AM - 01:00 PM', room: 'Auditorium 701', seatsLeft: 8, totalSeats: 30, startDate: '2026-10-06' }
+      { id: 'b-jps-01', name: 'Weekend Spoken Immersion Batch', days: 'Fri & Sat', time: '10:00 AM - 01:00 PM', room: 'Auditorium 701', seatsLeft: 8, totalSeats: 25, startDate: '2026-10-06' }
     ]
   },
   {
-    id: 'c-kor-topik',
-    code: 'DILS-KOR-01',
-    title: 'Korean EPS-TOPIK Government G2G Job Employment',
-    titleBn: 'কোরিয়ান ভাষা EPS-TOPIK ও সরকারি জি-টু-জি জব ভিসা',
-    language: 'korean',
-    level: 'EPS-TOPIK / HRD Korea',
-    price: 19000,
-    discountPrice: 14000,
-    duration: '3.5 Months (110 Hours)',
-    classesCount: 42,
-    instructorName: 'Sensei Min-ho Park & Biplob Roy',
-    instructorTitle: 'HRD Korea Specialist & EPS Exam Evaluator',
-    instructorPhoto: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=300&auto=format&fit=crop&q=80',
-    featured: false,
-    description: 'Focused training on Hangul reading, EPS standard textbook chapters 1-60, manufacturing & agriculture workplace vocabulary, and CBT computerized exam practice.',
-    descriptionBn: 'হাঙ্গুল বর্ণমালা, ইপিএস স্ট্যান্ডার্ড টেক্সটবুক ১-৬০ অধ্যায়, সিবিটি (CBT) কম্পিউটার বেজড পরীক্ষার রিয়েল প্র্যাকটিস।',
+    id: 'c-jp-ssw',
+    code: 'DILS-JPN-05',
+    title: 'SSW Tokutei Ginou Skills & Japanese Technical Prep',
+    titleBn: 'এসএসডব্লিউ (SSW) স্পেসিফাইড স্কিল্ড ওয়ার্কার টেকনিক্যাল প্রিপারেশন',
+    language: 'japanese',
+    level: 'SSW Track / Tokutei Ginou',
+    price: 24000,
+    discountPrice: 18000,
+    duration: '4 Months (140 Hours)',
+    classesCount: 48,
+    instructorName: 'MD. Abdur Razzak & Industry Panel',
+    instructorTitle: 'Director & Japan Immigration Specialist (JLPT-N1 Certified)',
+    instructorPhoto: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
+    featured: true,
+    description: 'Dedicated preparation for Nursing Care (Kaigo), Food Service, Construction, and Agriculture SSW skill evaluation tests and JFT-Basic.',
+    descriptionBn: 'কেয়ারগিভার (কাইগো), ফুড সার্ভিস, কনস্ট্রাকশন ও এগ্রিকালচার স্কিল টেস্ট এবং জেএফটি-বেসিক (JFT-Basic) পরীক্ষার চূড়ান্ত প্রস্তুতি।',
     syllabus: [
-      { week: 'Module 1', topic: 'Hangul & Basic Sentence Formulation', modules: ['Consonants, Vowels & Batchim rules', 'Essential workplace greetings', 'Numbers (Sino-Korean & Native Korean)'] },
-      { week: 'Module 2', topic: 'Workplace & Industrial Dialogue', modules: ['Safety commands in factory/construction', 'Equipment names & daily task instructions', 'Grammar points for EPS-TOPIK'] },
-      { week: 'Module 3', topic: 'CBT Computerized Test Simulation', modules: ['Listening 20 questions timer speed practice', 'Reading 20 questions pictorial identification', 'Past year questions breakdown'] }
+      { week: 'Module 1', topic: 'JFT-Basic & Workplace Japanese', modules: ['JFT-Basic test format mastery', 'Essential safety directives & industrial terms', 'Workplace compliance in Japan'] },
+      { week: 'Module 2', topic: 'Industry Technical Vocabulary (Kaigo / Food)', modules: ['Nursing care Japanese terms & patient etiquette', 'Hygiene, HACCP & kitchen commands', 'Tools & equipment nomenclature'] },
+      { week: 'Module 3', topic: 'CBT Computerized Test Simulation & Contract Signing', modules: ['Prometric CBT mock exam on computer', 'Employment terms understanding (Koyou Keiyaku)', 'Pre-departure visa clearance'] }
     ],
     batches: [
-      { id: 'b-kor-01', name: 'EPS-TOPIK Night Intensive', days: 'Sat, Mon, Wed', time: '08:00 PM - 10:00 PM', room: 'Online Interactive', seatsLeft: 12, totalSeats: 35, startDate: '2026-10-12' }
-    ]
-  },
-  {
-    id: 'c-fr-delf',
-    code: 'DILS-FR-01',
-    title: 'French DELF A1 & Spoken French (France & Canada PR)',
-    titleBn: 'ফ্রেঞ্চ ভাষা DELF A1 (কানাডা পিআর ও ফ্রান্স স্টাডি)',
-    language: 'french',
-    level: 'DELF A1 / CEFR',
-    price: 20000,
-    discountPrice: 15000,
-    duration: '3 Months (90 Hours)',
-    classesCount: 36,
-    instructorName: 'Mme. Sarah Rahman',
-    instructorTitle: 'Alliance Française Trained, DELF B2',
-    instructorPhoto: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=300&auto=format&fit=crop&q=80',
-    featured: false,
-    description: 'French phonetics, everyday conversation, café & travel dialogs, grammatical conjugation (present, passé composé), and DELF international exam preparation.',
-    descriptionBn: 'ফ্রেঞ্চ উচ্চারণ, দৈনন্দিন কথোপকথন, কানাডা এক্সপ্রেস এন্ট্রি সিআরএস পয়েন্ট বুস্টিং এবং ডেল্ফ এ১ প্রস্তুতি।',
-    syllabus: [
-      { week: 'Module 1', topic: 'Phonétique et Salutations', modules: ['French accents (é, è, ê, ç)', 'Nasal sounds & Liaison', 'Basic interactions'] },
-      { week: 'Module 2', topic: 'Grammaire et Vocabulaire', modules: ['Articles définis et indéfinis', 'Regular -er verbs and être / avoir', 'Expressing preferences and hobbies'] },
-      { week: 'Module 3', topic: 'Préparation DELF A1', modules: ['Compréhension de l\'oral', 'Compréhension des écrits', 'Production écrite et orale'] }
-    ],
-    batches: [
-      { id: 'b-fr-01', name: 'French Weekend Cohort', days: 'Fri & Sat', time: '04:00 PM - 07:00 PM', room: 'Room 704', seatsLeft: 7, totalSeats: 20, startDate: '2026-10-14' }
+      { id: 'b-ssw-01', name: 'SSW Evening Intensive (Farmgate Campus)', days: 'Sat, Mon, Wed', time: '07:00 PM - 09:30 PM', room: 'Room 703 (Japan Lab)', seatsLeft: 6, totalSeats: 20, startDate: '2026-10-12' }
     ]
   }
 ];
@@ -322,12 +296,12 @@ export const INITIAL_QUIZ_QUESTIONS: QuizQuestion[] = [
   },
   {
     id: 'q-4',
-    question: 'In Goethe A1 German, which article is correct for "Buch" (Book)?',
-    questionBn: 'জার্মান A1 লেভেলে "Buch" (বই) শব্দের জন্য সঠিক নির্দিষ্ট আর্টিকেল (Definite Article) কোনটি?',
+    question: 'In Japanese grammar, which particle indicates destination or direction of movement (e.g. "Toukyou ___ ikimasu")?',
+    questionBn: 'জাপানি ব্যাকরণে গন্তব্য বা দিক নির্দেশ করার জন্য কোন পার্টিকল ব্যবহৃত হয় (যেমন "টোকিও ___ যাব")?',
     type: 'mcq',
-    options: ['Der Buch', 'Die Buch', 'Das Buch', 'Den Buch'],
-    correctIndex: 2,
-    explanation: '"Buch" is a neuter noun in German, so the nominative article is "Das Buch".',
+    options: ['ni (に) / e (へ)', 'wo (を)', 'de (で)', 'ga (が)'],
+    correctIndex: 0,
+    explanation: 'The particles "ni (に)" and "e (へ)" are used after a place name to indicate the destination or direction of movement verbs like ikimasu (go), kimasu (come), and kaerimasu (return).',
     marks: 5
   },
   {
@@ -384,9 +358,9 @@ export const INITIAL_GRADEBOOK: GradebookEntry[] = [
     id: 'gb-03',
     studentId: 'DILS-2026-0112',
     studentName: 'Nusrat Jahan Mim',
-    courseName: 'German Goethe A1 Fast Track',
-    courseCode: 'DILS-GER-01',
-    batch: 'German Morning Cohort A1-1',
+    courseName: 'Japanese JLPT N3 Advanced Career Track',
+    courseCode: 'DILS-JPN-03',
+    batch: 'N3 Executive Evening',
     photoUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80',
     assignmentsScore: 78,
     quizzesScore: 74,
@@ -402,9 +376,9 @@ export const INITIAL_GRADEBOOK: GradebookEntry[] = [
     id: 'gb-04',
     studentId: 'DILS-2026-0118',
     studentName: 'Shahriar Ahmed Rifat',
-    courseName: 'IELTS Masterclass 7.5+',
-    courseCode: 'DILS-ENG-01',
-    batch: 'IELTS Weekend Special',
+    courseName: 'Spoken Japanese & Japan Embassy Interview',
+    courseCode: 'DILS-JPN-04',
+    batch: 'Weekend Spoken Immersion',
     photoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80',
     assignmentsScore: 95,
     quizzesScore: 92,
@@ -478,18 +452,18 @@ export const INITIAL_CERTIFICATES: CertificateRecord[] = [
     certificateId: 'DILS-CERT-2026-0118',
     studentName: 'Shahriar Ahmed Rifat',
     studentId: 'DILS-2026-0118',
-    courseName: 'IELTS Academic Preparation (Band 8.0 Achievement)',
-    level: 'CEFR C1 / IELTS Band 8.0',
+    courseName: 'Japanese Language 150-Hour Accredited Certificate (JLPT N3)',
+    level: 'CEFR B1 / JLPT N3 Equivalent',
     grade: 'A+ (High Distinction)',
     gpa: 4.0,
     issueDate: '10 September 2026',
-    expiryDate: 'September 2028',
-    instructorName: 'Prof. Faisal Mahmud',
+    expiryDate: 'Lifetime Verified',
+    instructorName: 'MD. ABDUR RAZZAK (JLPT N1)',
     directorName: 'MD. ABDUR RAZZAK',
     verificationUrl: 'https://dilsbd.com/verify?cert=DILS-CERT-2026-0118',
     studentPhoto: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80',
     status: 'Active & Verified',
-    qrData: 'DILS-VERIFIED:ID=DILS-CERT-2026-0118;NAME=Shahriar Ahmed Rifat;COURSE=IELTS 8.0;GRADE=A+;DATE=2026-09-10;CAMPUS=DHAKA-FARMGATE;URL=https://dilsbd.com'
+    qrData: 'DILS-VERIFIED:ID=DILS-CERT-2026-0118;NAME=Shahriar Ahmed Rifat;COURSE=JLPT N3;GRADE=A+;DATE=2026-09-10;CAMPUS=DHAKA-FARMGATE;URL=https://dilsbd.com'
   }
 ];
 
@@ -504,7 +478,7 @@ export const INITIAL_LEADS: Lead[] = [
     education: 'HSC Passed (2024)',
     targetIntake: 'April 2027 Intake',
     stage: 'new',
-    assignedCounselor: 'Jannat Ara Akhi',
+    assignedCounselor: 'Tanvir Kabir Biplob',
     createdAt: 'Today, 10:30 AM',
     nextFollowUp: 'Tomorrow, 11:00 AM',
     notes: ['Inquired via website Facebook ad. Interested in Farmgate campus morning batch. Budget 15k BDT.']
@@ -514,15 +488,15 @@ export const INITIAL_LEADS: Lead[] = [
     name: 'Shamima Akter Ritu',
     phone: '+880 1711-239845',
     email: 'shamima.ritu@yahoo.com',
-    courseInterest: 'German Goethe A1 (Spouse Visa)',
-    city: 'Munich / Berlin',
+    courseInterest: 'Japanese JLPT N5 & Embassy Interview',
+    city: 'Tokyo / Kyoto',
     education: 'BBA Completed (DU)',
-    targetIntake: 'Immediate Batch',
+    targetIntake: 'October 2026 Intake',
     stage: 'counseling',
-    assignedCounselor: 'Tanvir Hasan',
+    assignedCounselor: 'MD. Abdur Razzak',
     createdAt: 'Yesterday, 04:15 PM',
     nextFollowUp: '22-Sep-2026',
-    notes: ['Called student on phone. Husband is working in Berlin as IT specialist. Needs fast track A1 certificate within 2 months. Scheduled campus visit this Thursday.']
+    notes: ['Called student on phone. Husband is working in Tokyo as IT specialist. Needs fast track N5 certificate for dependent / student status within 2 months. Scheduled campus visit this Thursday.']
   },
   {
     id: 'lead-03',
@@ -543,15 +517,15 @@ export const INITIAL_LEADS: Lead[] = [
     id: 'lead-04',
     name: 'Tasnim Ahmed',
     phone: '+880 1622-998877',
-    courseInterest: 'IELTS Academic (Masterclass)',
-    city: 'UK / Canada',
+    courseInterest: 'Japanese JLPT N3 Advanced Career Track',
+    city: 'Tokyo / Yokohama',
     education: 'BSc in CSE',
-    targetIntake: 'Jan 2027 Intake',
+    targetIntake: 'April 2027 Intake',
     stage: 'counseling',
-    assignedCounselor: 'Faisal Mahmud',
+    assignedCounselor: 'MD. Abdur Razzak',
     createdAt: '17-Sep-2026',
     nextFollowUp: '21-Sep-2026',
-    notes: ['Targeting band 7.5. Demo class attended on Saturday. Positive feedback. Will confirm payment by Monday.']
+    notes: ['Targeting JLPT N3 for Tokyo software engineering jobs. Demo class attended on Saturday. Positive feedback. Will confirm payment by Monday.']
   }
 ];
 
@@ -638,31 +612,33 @@ export const INITIAL_TRAINERS: Trainer[] = [
   },
   {
     id: 'tr-03',
-    name: 'Frau Jannat Ara Akhi',
-    title: 'Lead German Language Instructor & Academic Advisor',
-    specialty: 'Goethe-Zertifikat A1, A2, B1, German Spouse & Study Visa',
-    experience: '6+ Years in German Language Pedagogy',
-    languages: ['German (C1)', 'Bangla', 'English'],
-    photo: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&auto=format&fit=crop&q=80',
-    bio: 'Specialist in rapid A1 certification for family reunion and Ausbildung applicants in Germany.',
-    credentials: ['Goethe Institut C1', 'DAAD Certified Training'],
+    name: 'Sensei Kenji Takahashi',
+    title: 'Native Japanese Cultural & Pronunciation Advisor',
+    specialty: 'Native Pronunciation, Chokai Listening Immersion, Business Bowing (Ojigi) & Keigo',
+    experience: '10+ Years in Cross-Cultural Japanese Pedagogy',
+    languages: ['Japanese (Native)', 'English', 'Bangla (Conversational)'],
+    photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80',
+    bio: 'Native Japanese mentor advising DILS students on natural conversational pacing, workplace etiquette, Tokyo life transition, and embassy interview confidence.',
+    credentials: ['Native Japanese Speaker', 'Tokyo University of Foreign Studies Alumni', 'Cross-Cultural Education Specialist'],
     phone: '01764-395945',
     whatsapp: '+880 1300-634046',
-    email: 'care.dils2014@gmail.com'
+    email: 'care.dils2014@gmail.com',
+    jlptLevel: 'Native Speaker'
   },
   {
     id: 'tr-04',
-    name: 'Prof. Faisal Mahmud',
-    title: 'Senior IELTS Master Trainer',
-    specialty: 'Academic Writing Task 2, Fluency & Pronunciation (Band 8.5)',
-    experience: '10+ Years training IELTS aspirants',
-    languages: ['English (Band 8.5)', 'Bangla'],
-    photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80',
-    bio: 'Master strategist for time-saving reading techniques and band-boosting cohesive writing structures.',
-    credentials: ['British Council IELTS Certified Trainer', 'Cambridge Assessment Specialist'],
+    name: 'Sultana Razia',
+    title: 'Senior Japanese Coach & SSW Technical Specialist',
+    specialty: 'JLPT N2 Certified, SSW Tokutei Ginou Nursing Care (Kaigo) & JFT-Basic Training',
+    experience: '7+ Years training Japanese language & SSW aspirants',
+    languages: ['Japanese (JLPT N2)', 'Bangla (Native)', 'English'],
+    photo: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&auto=format&fit=crop&q=80',
+    bio: 'Specialist in rapid JLPT N4/N3 mastery, Prometric CBT computerized testing drills, and healthcare/food service SSW employment contracts in Japan.',
+    credentials: ['JLPT N2 Certified', 'Prometric CBT Trainer', 'Specified Skilled Worker (SSW) Certified Mentor'],
     phone: '01764-395945',
     whatsapp: '+880 1300-634046',
-    email: 'care.dils2014@gmail.com'
+    email: 'care.dils2014@gmail.com',
+    jlptLevel: 'JLPT N2'
   }
 ];
 

@@ -383,7 +383,7 @@ export const PortalGradebookExams: React.FC<PortalGradebookExamsProps> = ({
                 সেন্ট্রাল প্রশ্ন ব্যাংক ও পুল (Central Question Bank)
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                কোর্স, লেভেল (N5, N4, A1, IELTS) ও টপিক ভিত্তিক পুনর্ব্যবহারযোগ্য প্রশ্নমালা
+                কোর্স, লেভেল (JLPT N5, N4, N3, NAT-TEST, SSW) ও টপিক ভিত্তিক পুনর্ব্যবহারযোগ্য প্রশ্নমালা
               </p>
             </div>
 
