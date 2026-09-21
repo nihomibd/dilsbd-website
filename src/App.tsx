@@ -24,7 +24,7 @@ import {
 
 export default function App() {
   const [currentPortal, setCurrentPortal] = useState<PortalMode>('website');
-  const [lang, setLang] = useState<LangMode>('bn');
+  const [lang, setLang] = useState<LangMode>('jp');
   
   // Modals
   const [isAdmissionOpen, setIsAdmissionOpen] = useState(false);
