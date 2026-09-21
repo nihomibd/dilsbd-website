@@ -126,66 +126,68 @@ export default function App() {
         )}
       </main>
 
-      {/* 3. FOOTER */}
-      <footer className="border-t border-slate-900 bg-slate-950 text-xs text-slate-500 py-10 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-6 border-b border-slate-900 text-xs">
-            <div>
-              <span className="text-white font-bold text-sm block mb-1">
-                Dhaka International Language School & Visa Center (DILS)
-              </span>
-              <p className="text-slate-400 text-[11px] leading-relaxed">
-                {DILS_INFO.address}
-              </p>
-              <div className="mt-2 text-[11px] text-slate-400">
-                অফিসিয়াল ওয়েবসাইট: <a href="https://www.dilsbd.com" target="_blank" rel="noreferrer" className="text-white hover:text-red-400 font-semibold underline">dilsbd.com</a>
+      {/* 3. FOOTER (Shown for management and student portals; landing page has its own dedicated institutional footer) */}
+      {currentPortal !== 'website' && (
+        <footer className="border-t border-slate-900 bg-slate-950 text-xs text-slate-500 py-10 px-4 sm:px-6">
+          <div className="max-w-7xl mx-auto space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-6 border-b border-slate-900 text-xs">
+              <div>
+                <span className="text-white font-bold text-sm block mb-1">
+                  Dhaka International Language School & Visa Center (DILS)
+                </span>
+                <p className="text-slate-400 text-[11px] leading-relaxed">
+                  {DILS_INFO.address}
+                </p>
+                <div className="mt-2 text-[11px] text-slate-400">
+                  অফিসিয়াল ওয়েবসাইট: <a href="https://www.dilsbd.com" target="_blank" rel="noreferrer" className="text-white hover:text-red-400 font-semibold underline">dilsbd.com</a>
+                </div>
+              </div>
+
+              <div>
+                <span className="text-white font-bold text-xs block mb-1">অফিসিয়াল যোগাযোগ ও হটলাইন</span>
+                <p className="text-slate-400 text-[11px]">
+                  হটলাইন: <strong className="text-emerald-400 font-mono">{DILS_INFO.hotline}</strong>
+                </p>
+                <p className="text-slate-400 text-[11px]">
+                  WhatsApp: <strong className="text-slate-300 font-mono">{DILS_INFO.whatsapp}</strong>
+                </p>
+                <p className="text-slate-400 text-[11px]">
+                  ইমেইল: <strong className="text-slate-300">{DILS_INFO.email}</strong>
+                </p>
+              </div>
+
+              <div>
+                <span className="text-white font-bold text-xs block mb-1">নেতৃত্ব ও একাডেমি মেন্টর</span>
+                <p className="text-slate-400 text-[11px]">
+                  পরিচালক: <strong className="text-slate-200">{DILS_INFO.director}</strong> (JLPT-N1)
+                </p>
+                <p className="text-slate-400 text-[11px]">
+                  ইন্সট্রাক্টর: <strong className="text-slate-200">{DILS_INFO.instructor}</strong> (JLPT-N2)
+                </p>
+                <a
+                  href={DILS_INFO.facebook}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue-400 hover:text-blue-300 text-[11px] font-semibold mt-1 inline-block"
+                >
+                  ফেসবুক পেজে যুক্ত হোন →
+                </a>
               </div>
             </div>
 
-            <div>
-              <span className="text-white font-bold text-xs block mb-1">অফিসিয়াল যোগাযোগ ও হটলাইন</span>
-              <p className="text-slate-400 text-[11px]">
-                হটলাইন: <strong className="text-emerald-400 font-mono">{DILS_INFO.hotline}</strong>
-              </p>
-              <p className="text-slate-400 text-[11px]">
-                WhatsApp: <strong className="text-slate-300 font-mono">{DILS_INFO.whatsapp}</strong>
-              </p>
-              <p className="text-slate-400 text-[11px]">
-                ইমেইল: <strong className="text-slate-300">{DILS_INFO.email}</strong>
-              </p>
-            </div>
-
-            <div>
-              <span className="text-white font-bold text-xs block mb-1">নেতৃত্ব ও একাডেমি মেন্টর</span>
-              <p className="text-slate-400 text-[11px]">
-                পরিচালক: <strong className="text-slate-200">{DILS_INFO.director}</strong> (JLPT-N1)
-              </p>
-              <p className="text-slate-400 text-[11px]">
-                ইন্সট্রাক্টর: <strong className="text-slate-200">{DILS_INFO.instructor}</strong> (JLPT-N2)
-              </p>
-              <a
-                href={DILS_INFO.facebook}
-                target="_blank"
-                rel="noreferrer"
-                className="text-blue-400 hover:text-blue-300 text-[11px] font-semibold mt-1 inline-block"
-              >
-                ফেসবুক পেজে যুক্ত হোন →
-              </a>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px]">
+              <div>
+                © 2026 Dhaka International Language School (DILS). All Rights Reserved.
+              </div>
+              <div className="flex items-center gap-3 text-slate-400">
+                <span>System: <strong className="text-slate-200">Unity Core Tech (UCT-LMS-2026-0945)</strong></span>
+                <span>•</span>
+                <span className="text-red-400 font-mono">dilsbd.com Production Engine</span>
+              </div>
             </div>
           </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px]">
-            <div>
-              © 2026 Dhaka International Language School (DILS). All Rights Reserved.
-            </div>
-            <div className="flex items-center gap-3 text-slate-400">
-              <span>System: <strong className="text-slate-200">Unity Core Tech (UCT-LMS-2026-0945)</strong></span>
-              <span>•</span>
-              <span className="text-red-400 font-mono">dilsbd.com Production Engine</span>
-            </div>
-          </div>
-        </div>
-      </footer>
+        </footer>
+      )}
 
       {/* 4. FLOATING CONTACT & HELPDESK WIDGET */}
       <FloatingContactWidget
