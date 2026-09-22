@@ -1,6 +1,6 @@
 {
-  "name": "DILS Dhaka - The Next-Generation Japanese Language School & Visa Center",
-  "description": "Bridging Bangladesh and Japan: The Next-Generation Japanese Language School. JLPT N1-led physical classes combined with 24/7 AI-driven practice. The most reliable partner for Japanese institutions.",
+  "name": "DILS Dhaka - Next-Gen Japanese Language School & Nihomi AI",
+  "description": "Bridging Bangladesh and Japan: Dhaka's premier Japanese language institution. JLPT N1-led physical classes, 24/7 Nihomi AI memory engine, and 100% COE visa success.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

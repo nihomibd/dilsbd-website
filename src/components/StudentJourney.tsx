@@ -179,6 +179,17 @@ export const StudentJourney: React.FC<StudentJourneyProps> = ({
 }) => {
   const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
   const currentStep = JOURNEY_STEPS[activeStepIndex];
+  const carouselRef = React.useRef<HTMLDivElement>(null);
+
+  const scrollCarousel = (direction: 'left' | 'right') => {
+    if (carouselRef.current) {
+      const scrollAmount = 260;
+      carouselRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   const getStepIcon = (iconType: JourneyStep['iconType']) => {
     switch (iconType) {
@@ -210,7 +221,7 @@ export const StudentJourney: React.FC<StudentJourneyProps> = ({
   };
 
   return (
-    <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 sm:p-9 shadow-2xl relative overflow-hidden space-y-8">
+    <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-3xl p-5 sm:p-9 shadow-[0_4px_30px_rgba(0,0,0,0.5)] relative overflow-hidden space-y-8">
       
       {/* Decorative ambient blur */}
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -219,13 +230,15 @@ export const StudentJourney: React.FC<StudentJourneyProps> = ({
       {/* 1. Header Section */}
       <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-800/80 pb-6">
         <div className="space-y-2 max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-950/70 border border-red-800/80 text-red-400 text-xs font-bold">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/70 border border-red-500/40 text-red-400 text-xs font-bold font-mono">
             <Compass className="w-3.5 h-3.5 text-red-400" />
-            <span>{lang === 'bn' ? 'স্টুডেন্ট সাকসেস জার্নি রোডম্যাপ' : 'The Proven Student Journey Roadmap'}</span>
+            <span>{lang === 'jp' ? '5段階の確実な留学ロードマップ' : lang === 'bn' ? 'স্টুডেন্ট সাকসেস জার্নি রোডম্যাপ' : 'The Proven Student Journey Roadmap'}</span>
           </div>
 
           <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-            {lang === 'bn' ? (
+            {lang === 'jp' ? (
+              <span>入学から東京着陸まで: <strong className="text-red-400">5つのマイルストーン</strong></span>
+            ) : lang === 'bn' ? (
               <span>শূন্য থেকে জাপানে সফল ক্যারিয়ার: <strong className="text-red-400">৫টি নিশ্চিত পদক্ষেপ</strong></span>
             ) : (
               <span>From Enrollment to Tokyo Landing: <strong className="text-red-400">The 5 Milestones</strong></span>
@@ -233,38 +246,65 @@ export const StudentJourney: React.FC<StudentJourneyProps> = ({
           </h2>
 
           <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-            {lang === 'bn'
+            {lang === 'jp'
+              ? 'DILSでの初日から、日本語集中特訓、NAT/JLPT試験、COE在留資格申請、大使館面接までの完全な透明性を持つ5段階フロー。'
+              : lang === 'bn'
               ? 'DILS-এ আপনার প্রথম দিন থেকে শুরু করে জাপানি ভাষা শিক্ষা, ন্যাট-টেস্ট/জেএলপিটি পাস, সিওই ফাইল প্রসেসিং এবং জাপান এম্বাসি ইন্টারভিউ পর্যন্ত স্বচ্ছ ও নির্ভরযোগ্য রোডম্যাপ।'
               : 'A transparent, step-by-step roadmap showing how prospective learners progress from enrollment and language proficiency to COE legal processing and Embassy visa issuance.'}
           </p>
         </div>
 
-        {/* Quick Trust Badges */}
-        <div className="flex items-center gap-3">
-          <div className="bg-slate-950 border border-slate-800 px-4 py-2.5 rounded-2xl text-center">
-            <div className="text-lg font-black text-emerald-400 font-mono">৯৮.৪%</div>
-            <div className="text-[10px] text-slate-400">সিওই পাসের হার</div>
+        {/* Carousel controls & Trust Badges */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          {/* Carousel Left/Right scroll controls */}
+          <div className="flex items-center gap-2 bg-slate-950/70 border border-slate-800/80 p-1 rounded-xl">
+            <button
+              onClick={() => scrollCarousel('left')}
+              className="p-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
+              title="Previous Step"
+            >
+              <ChevronRight className="w-4 h-4 rotate-180" />
+            </button>
+            <span className="text-[11px] font-mono text-slate-400 px-1">
+              Step 0{activeStepIndex + 1}/05
+            </span>
+            <button
+              onClick={() => scrollCarousel('right')}
+              className="p-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
+              title="Next Step"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
-          <div className="bg-slate-950 border border-slate-800 px-4 py-2.5 rounded-2xl text-center">
-            <div className="text-lg font-black text-amber-400 font-mono">১,৫০০+</div>
-            <div className="text-[10px] text-slate-400">জাপানে অবস্থানরত</div>
-          </div>
-          <div className="bg-slate-950 border border-slate-800 px-4 py-2.5 rounded-2xl text-center">
-            <div className="text-lg font-black text-red-400 font-mono">১৫০ ঘণ্টা</div>
-            <div className="text-[10px] text-slate-400">স্বীকৃত কোর্স</div>
+
+          <div className="flex items-center gap-2">
+            <div className="bg-slate-950/60 border border-slate-800/80 px-3 py-1.5 rounded-xl text-center">
+              <div className="text-base font-black text-emerald-400 font-mono">98.4%</div>
+              <div className="text-[9px] text-slate-400 font-mono">COE Compliance</div>
+            </div>
+            <div className="bg-slate-950/60 border border-slate-800/80 px-3 py-1.5 rounded-xl text-center">
+              <div className="text-base font-black text-amber-400 font-mono">1,500+</div>
+              <div className="text-[9px] text-slate-400 font-mono">Dispatched</div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* 2. Visual Progression Stepper (Horizontal swipeable carousel on mobile, grid on desktop) */}
-      <div className="relative z-10">
-        <div className="sm:hidden text-center pb-2">
-          <span className="text-[11px] font-mono text-slate-400 bg-slate-950/80 px-3 py-1 rounded-full border border-slate-800">
-            👈 ডানে-বামে সোয়াইপ করে ৫টি ধাপ দেখুন 👉
+      {/* 2. Visual Progression Stepper (Horizontal swipeable carousel with snap-x & scroll-snap) */}
+      <div className="relative z-10 space-y-2">
+        <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
+          <span className="flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-red-400" />
+            <span>{lang === 'jp' ? 'スワイプまたはクリックで各段階を確認できます' : lang === 'bn' ? '👈 ডানে-বামে সোয়াইপ করে ৫টি ধাপ দেখুন 👉' : '👈 Swipe horizontally to explore 5 steps 👉'}</span>
           </span>
+          <span className="text-slate-500 hidden sm:inline">snap-x enabled</span>
         </div>
 
-        <div className="flex overflow-x-auto snap-x snap-mandatory sm:grid sm:grid-cols-5 gap-2.5 sm:gap-3 pb-2 sm:pb-0 scrollbar-none">
+        {/* Carousel Container with Tailwind snap-x & scroll-snap */}
+        <div 
+          ref={carouselRef}
+          className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-3 scrollbar-none scroll-smooth"
+        >
           {JOURNEY_STEPS.map((step, idx) => {
             const isSelected = activeStepIndex === idx;
             const isPast = activeStepIndex > idx;
@@ -273,10 +313,10 @@ export const StudentJourney: React.FC<StudentJourneyProps> = ({
               <button
                 key={step.id}
                 onClick={() => setActiveStepIndex(idx)}
-                className={`relative text-left p-3.5 sm:p-4 rounded-2xl transition-all duration-300 border flex flex-col justify-between group snap-start flex-shrink-0 min-w-[210px] sm:min-w-0 min-h-[44px] ${
+                className={`snap-center sm:snap-start shrink-0 w-[82vw] sm:w-[260px] md:w-[280px] text-left p-4 rounded-2xl transition-all duration-300 border flex flex-col justify-between group min-h-[140px] ${
                   isSelected
-                    ? 'bg-slate-800/90 border-red-500 shadow-xl ring-2 ring-red-500/30 -translate-y-0.5'
-                    : 'bg-slate-950/70 border-slate-800 hover:border-slate-700 hover:bg-slate-900/60'
+                    ? 'bg-slate-800/80 backdrop-blur-md border-red-500 shadow-xl ring-2 ring-red-500/30 -translate-y-0.5'
+                    : 'bg-slate-900/50 backdrop-blur-md border-slate-800/80 hover:border-slate-700/80 hover:bg-slate-800/50'
                 }`}
               >
                 {/* Top: Step Number & Icon */}
@@ -291,28 +331,32 @@ export const StudentJourney: React.FC<StudentJourneyProps> = ({
                     {isPast ? <CheckCircle2 className="w-4 h-4" /> : `0${step.stepNumber}`}
                   </span>
 
-                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
-                    isSelected ? 'bg-red-950 text-red-400 font-bold' : 'text-slate-500'
+                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                    isSelected 
+                      ? 'bg-red-950/80 border-red-800 text-red-400 font-bold' 
+                      : 'bg-slate-950/60 border-slate-800 text-slate-400'
                   }`}>
-                    {step.timelineBn.split('(')[0]}
+                    {lang === 'bn' ? step.timelineBn.split('(')[0] : step.timeline}
                   </span>
                 </div>
 
                 {/* Title */}
-                <div>
+                <div className="space-y-1">
                   <h4 className={`text-xs sm:text-sm font-bold leading-snug line-clamp-2 transition-colors ${
                     isSelected ? 'text-white' : 'text-slate-300 group-hover:text-slate-100'
                   }`}>
                     {lang === 'bn' ? step.stageNameBn : step.stageName}
                   </h4>
-                  <p className="text-[10px] text-slate-500 line-clamp-1 mt-1 font-mono">
+                  <p className="text-[10px] text-slate-400 line-clamp-1 font-mono">
                     {step.mentor.split('(')[0]}
                   </p>
                 </div>
 
                 {/* Active Indicator Bar at bottom of card */}
-                {isSelected && (
+                {isSelected ? (
                   <div className="w-full h-1 bg-gradient-to-r from-red-500 to-amber-500 rounded-full mt-3"></div>
+                ) : (
+                  <div className="w-full h-0.5 bg-slate-800 rounded-full mt-3 group-hover:bg-slate-700"></div>
                 )}
               </button>
             );
@@ -320,8 +364,8 @@ export const StudentJourney: React.FC<StudentJourneyProps> = ({
         </div>
       </div>
 
-      {/* 3. Deep-Dive Milestone Card for the Selected Step */}
-      <div className="relative z-10 bg-slate-950/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl">
+      {/* 3. Deep-Dive Milestone Card for the Selected Step with Glassmorphism */}
+      <div className="relative z-10 bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-[0_4px_30px_rgba(0,0,0,0.4)]">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* Left Column: Stage Overview & Checklists (7 cols) */}
@@ -332,7 +376,7 @@ export const StudentJourney: React.FC<StudentJourneyProps> = ({
               <span className="px-3 py-1 rounded-xl bg-red-600/20 text-red-400 border border-red-500/30 text-xs font-bold font-mono">
                 মাইলস্টোন ০{currentStep.stepNumber}
               </span>
-              <span className="px-3 py-1 rounded-xl bg-slate-900 text-slate-300 border border-slate-800 text-xs font-mono flex items-center gap-1.5">
+              <span className="px-3 py-1 rounded-xl bg-slate-950/60 text-slate-300 border border-slate-800 text-xs font-mono flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-amber-400" />
                 <span>সময়কাল: <strong>{lang === 'bn' ? currentStep.timelineBn : currentStep.timeline}</strong></span>
               </span>
@@ -365,7 +409,7 @@ export const StudentJourney: React.FC<StudentJourneyProps> = ({
                 {currentStep.highlights.map((h, i) => (
                   <div 
                     key={i} 
-                    className="flex items-start gap-2 bg-slate-900/80 border border-slate-800/90 rounded-xl p-3 text-xs text-slate-200"
+                    className="flex items-start gap-2 bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 text-xs text-slate-200"
                   >
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
                     <span className="leading-snug">{lang === 'bn' ? h.bn : h.en}</span>
@@ -375,7 +419,7 @@ export const StudentJourney: React.FC<StudentJourneyProps> = ({
             </div>
 
             {/* Key Deliverable Box */}
-            <div className="bg-gradient-to-r from-red-950/40 to-slate-900 border border-red-900/50 rounded-2xl p-4 flex items-center gap-4">
+            <div className="bg-slate-950/60 border border-red-900/40 rounded-2xl p-4 flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-red-600/20 border border-red-500/40 text-red-400 flex items-center justify-center flex-shrink-0">
                 <Award className="w-6 h-6" />
               </div>
@@ -392,7 +436,7 @@ export const StudentJourney: React.FC<StudentJourneyProps> = ({
           </div>
 
           {/* Right Column: Mentor Profile & Direct Action (5 cols) */}
-          <div className="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 space-y-6">
+          <div className="lg:col-span-5 bg-slate-950/60 border border-slate-800/80 rounded-3xl p-6 space-y-6">
             
             {/* Mentor Profile Header */}
             <div>
@@ -400,7 +444,7 @@ export const StudentJourney: React.FC<StudentJourneyProps> = ({
                 <Users className="w-3.5 h-3.5 text-red-400" />
                 <span>তত্ত্বাবধানকারী প্রধান শিক্ষক ও ভিসা মেন্টর</span>
               </div>
-              <div className="bg-slate-950 border border-slate-800/90 rounded-2xl p-4 flex items-center gap-3.5">
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 flex items-center gap-3.5">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-600 to-amber-600 text-white font-black text-lg flex items-center justify-center shadow">
                   {currentStep.mentor.slice(0, 2)}
                 </div>
@@ -416,7 +460,7 @@ export const StudentJourney: React.FC<StudentJourneyProps> = ({
             </div>
 
             {/* Stepper Navigation helper */}
-            <div className="bg-slate-950/70 border border-slate-800/70 rounded-2xl p-4 space-y-3">
+            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 space-y-3">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-400">ধাপ অগ্রগতি:</span>
                 <span className="font-mono font-bold text-white">০{currentStep.stepNumber} / ০৫</span>
@@ -450,12 +494,16 @@ export const StudentJourney: React.FC<StudentJourneyProps> = ({
             <div className="space-y-2.5">
               <button
                 onClick={() => handleAction(currentStep)}
-                className="w-full py-3.5 px-4 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-xl transition-transform active:scale-95 flex items-center justify-center gap-2"
+                className="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-red-950/50 transition-all flex items-center justify-center gap-2"
               >
                 <span>{lang === 'bn' ? currentStep.actionLabel.bn : currentStep.actionLabel.en}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
-
+              <p className="text-[10px] text-center text-slate-400">
+                {currentStep.actionType === 'admission' && 'ভর্তি নিশ্চিত করুন এবং প্রথম দিনেই স্টুডেন্ট কিট বুঝে নিন।'}
+                {currentStep.actionType === 'whatsapp' && 'সরাসরি হেড অফ ট্রেইনারের সাথে পরামর্শের জন্য হোয়াটসঅ্যাপ চ্যাট শুরু হবে।'}
+                {currentStep.actionType === 'certificate' && 'অনলাইনে ডিজিটাল কিউআর কোড স্ক্যান করে প্রাতিষ্ঠানিক সত্যতা যাচাই করুন।'}
+              </p>
               <div className="flex items-center justify-center gap-4 text-[11px] text-slate-500 pt-1">
                 <span className="flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />

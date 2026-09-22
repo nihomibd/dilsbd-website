@@ -10,28 +10,42 @@ import {
   PhoneCall, 
   Mail, 
   MapPin, 
-  Calendar, 
   CheckCircle2, 
-  ExternalLink, 
   Users, 
-  FileCheck, 
   Brain, 
-  BookOpen, 
-  Clock, 
-  ChevronRight, 
   Menu, 
   X, 
-  Globe2, 
-  MessageSquareText, 
   Target, 
-  Compass, 
   Cpu, 
   Zap, 
-  Check, 
+  Briefcase,
+  Play,
+  RotateCcw,
+  Volume2,
+  Headphones,
+  Check,
+  ChevronRight,
+  MessageCircle,
   HelpCircle,
-  Briefcase
+  Clock,
+  ExternalLink,
+  Search,
+  FileCheck,
+  QrCode,
+  Calculator,
+  Calendar,
+  DollarSign,
+  Receipt,
+  Download,
+  Smartphone,
+  Activity,
+  Compass
 } from 'lucide-react';
-import { Course, Trainer, LangMode } from '../types';
+import { Course, Trainer, LangMode, PortalMode } from '../types';
+import { VISA_SUCCESS_STORIES } from '../data/mockData';
+import { playPronunciation } from '../utils/audioQr';
+import { NihomiLearningAnalytics } from './NihomiLearningAnalytics';
+import { StudentJourney } from './StudentJourney';
 
 interface JapaneseCorporateLandingProps {
   courses?: Course[];
@@ -41,14 +55,15 @@ interface JapaneseCorporateLandingProps {
   onOpenAdmission?: (courseId?: string) => void;
   onOpenValidator?: (certId?: string) => void;
   onSwitchToStudentPortal?: (courseId: string) => void;
+  onSelectPortal?: (portal: PortalMode) => void;
 }
 
 export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> = ({
-  courses = [],
   lang: initialLang = 'jp',
   onOpenAdmission,
   onOpenValidator,
   onSwitchToStudentPortal,
+  onSelectPortal,
 }) => {
   // Multilingual First: Default is Japanese ('jp')
   const [currentLang, setCurrentLang] = useState<LangMode>(initialLang || 'jp');
@@ -57,24 +72,99 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
   const [dhakaTime, setDhakaTime] = useState<string>('');
   const [tokyoTime, setTokyoTime] = useState<string>('');
   
-  // Navigation & UI States
+  // Navigation & Modal States
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const [partnerModalOpen, setPartnerModalOpen] = useState<boolean>(false);
-  const [activeAITab, setActiveAITab] = useState<'infrastructure' | 'radar' | 'srs'>('infrastructure');
-  
+  const [fastAdmissionOpen, setFastAdmissionOpen] = useState<boolean>(false);
+  const [quickTestOpen, setQuickTestOpen] = useState<boolean>(false);
+  const [scheduleModalOpen, setScheduleModalOpen] = useState<boolean>(false);
+
+  // Transparent Tuition Calculator States
+  const [calcCourse, setCalcCourse] = useState<'n5' | 'n4' | 'ssw' | 'combo'>('n5');
+  const [calcIntake, setCalcIntake] = useState<'April 2027' | 'October 2027' | 'July 2027'>('April 2027');
+  const [includeBooks, setIncludeBooks] = useState<boolean>(true);
+  const [includeExamFee, setIncludeExamFee] = useState<boolean>(true);
+
+  // Active Interactive Nihomi Feature Tab
+  const [activeNihomiFeature, setActiveNihomiFeature] = useState<'sensei' | 'srs' | 'radar' | 'mock'>('sensei');
+
+  // Interactive Nihomi AI Voice/Chat Simulation index
+  const [aiChatIndex, setAiChatIndex] = useState(0);
+
+  // Alumni COE Filter state
+  const [alumniFilter, setAlumniFilter] = useState<'All' | 'Tokyo' | 'Osaka' | 'Nagoya' | 'Kyoto'>('All');
+
+  // PWA Install State
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstalled, setIsInstalled] = useState<boolean>(false);
+  const [showPwaModal, setShowPwaModal] = useState<boolean>(false);
+
   // Partner Inquiry Form State
   const [partnerForm, setPartnerForm] = useState({
     orgName: '',
     orgType: 'language_school',
     contactPerson: '',
     email: '',
-    phone: '',
     locationInJapan: 'Tokyo',
     notes: '',
     submitted: false
   });
 
-  // Sync dual clocks every second
+  // Fast Student Admission Drawer Form
+  const [selectedCourseId, setSelectedCourseId] = useState<string>('c-jp-n5');
+  const [selectedBatchTime, setSelectedBatchTime] = useState<string>('Morning (10:00 AM)');
+  const [admissionForm, setAdmissionForm] = useState({
+    fullName: '',
+    phone: '',
+    submitted: false
+  });
+
+  // Nihomi 30-Second Quick Test State
+  const [testCurrentQ, setTestCurrentQ] = useState(0);
+  const [testScore, setTestScore] = useState(0);
+  const [testCompleted, setTestCompleted] = useState(false);
+  const [selectedChoice, setSelectedChoice] = useState<number | null>(null);
+
+  const testQuestions = [
+    {
+      qJp: '「日本」の読み方と意味は？',
+      qEn: 'What is the reading and meaning of 「日本」?',
+      qBn: '「日本」শব্দটির উচ্চারণ ও অর্থ কী?',
+      audio: 'にほん',
+      options: [
+        { text: 'にほん (Nihon) - Japan', isCorrect: true },
+        { text: 'がくせい (Gakusei) - Student', isCorrect: false },
+        { text: 'せんせい (Sensei) - Teacher', isCorrect: false },
+        { text: 'ほん (Hon) - Book', isCorrect: false }
+      ]
+    },
+    {
+      qJp: '正しい助詞を選んでください：わたし ___ がくせい です。',
+      qEn: 'Choose the correct topic particle: Watashi ___ gakusei desu.',
+      qBn: 'সঠিক টপিক মার্কার পার্টিকল বেছে নিন: わたし ___ がくせい です。',
+      audio: 'わたしはがくせいです',
+      options: [
+        { text: 'は (wa)', isCorrect: true },
+        { text: 'が (ga)', isCorrect: false },
+        { text: 'を (wo)', isCorrect: false },
+        { text: 'に (ni)', isCorrect: false }
+      ]
+    },
+    {
+      qJp: '最も丁寧な「ありがとうございます」の意味は？',
+      qEn: 'What does the polite phrase 「ありがとうございます」 mean?',
+      qBn: 'জাপানি সম্মানসূচক বাক্য 「ありがとうございます」 এর অর্থ কী?',
+      audio: 'ありがとうございます',
+      options: [
+        { text: 'Thank you very much (অনেক ধন্যবাদ)', isCorrect: true },
+        { text: 'Good morning (শুভ সকাল)', isCorrect: false },
+        { text: 'Good afternoon (শুভ অপরাহ্ন)', isCorrect: false },
+        { text: 'Goodbye (বিদায়)', isCorrect: false }
+      ]
+    }
+  ];
+
+  // Sync dual clocks
   useEffect(() => {
     const updateClocks = () => {
       const now = new Date();
@@ -83,7 +173,6 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
           timeZone: 'Asia/Dhaka',
           hour: '2-digit',
           minute: '2-digit',
-          second: '2-digit',
           hour12: true
         })
       );
@@ -92,7 +181,6 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
           timeZone: 'Asia/Tokyo',
           hour: '2-digit',
           minute: '2-digit',
-          second: '2-digit',
           hour12: false
         })
       );
@@ -102,240 +190,260 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
     return () => clearInterval(interval);
   }, []);
 
-  // Update currentLang when prop changes
   useEffect(() => {
     if (initialLang) setCurrentLang(initialLang);
   }, [initialLang]);
 
-  // Multilingual Dictionary
+  // PWA Event Listener
+  useEffect(() => {
+    const handleBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('appinstalled', () => {
+      setIsInstalled(true);
+      setDeferredPrompt(null);
+    });
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+    };
+  }, []);
+
+  const handleInstallPwa = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+      }
+    } else {
+      setShowPwaModal(true);
+    }
+  };
+
+  // Filtered alumni stories
+  const filteredAlumni = VISA_SUCCESS_STORIES.filter(s => {
+    if (alumniFilter === 'All') return true;
+    return s.destinationCity.toLowerCase().includes(alumniFilter.toLowerCase());
+  });
+
+  // Ultra-concise, minimalist translation dictionary (Zero Fluff, Fast to Read)
   const t = {
     top: {
-      dhaka: currentLang === 'jp' ? 'ダッカ本部' : currentLang === 'bn' ? 'ঢাকা ক্যাম্পাস' : 'DHAKA HQ',
-      tokyo: currentLang === 'jp' ? '東京窓口' : currentLang === 'bn' ? 'টোকিও অফিস' : 'TOKYO DESK',
-      verifyBtn: currentLang === 'jp' ? '修了証明書照会' : currentLang === 'bn' ? 'সার্টিফিকেট যাচাই' : 'Verify Certificate',
-      partnerLogin: currentLang === 'jp' ? '日本の提携校ポータル' : currentLang === 'bn' ? 'জাপান পার্টনার পোর্টাল' : 'Partner School Portal',
+      dhaka: currentLang === 'jp' ? 'ダッカ本部' : currentLang === 'bn' ? 'ঢাকা' : 'DHAKA',
+      tokyo: currentLang === 'jp' ? '東京窓口' : currentLang === 'bn' ? 'টোকিও' : 'TOKYO',
+      verify: currentLang === 'jp' ? '証明書照会' : currentLang === 'bn' ? 'যাচাই' : 'Verify QR',
+      partnerBtn: currentLang === 'jp' ? '日本の提携校ポータル' : currentLang === 'bn' ? 'পার্টনার পোর্টাল' : 'Partner Portal',
     },
     nav: {
-      partners: currentLang === 'jp' ? '日本の提携校' : currentLang === 'bn' ? 'জাপানের পার্টনার' : 'Partners in Japan',
-      curriculum: currentLang === 'jp' ? 'カリキュラム' : currentLang === 'bn' ? 'কারিকুলাম' : 'Curriculum',
-      aiEcosystem: currentLang === 'jp' ? 'AIエコシステム' : currentLang === 'bn' ? 'এআই ইকোসিস্টেম' : 'AI Ecosystem',
-      leadership: currentLang === 'jp' ? '主任講師紹介' : currentLang === 'bn' ? 'প্রধান শিক্ষক' : 'Leadership',
-      services: currentLang === 'jp' ? '提供プログラム' : currentLang === 'bn' ? 'কোর্স ও সার্ভিস' : 'Services',
-      about: currentLang === 'jp' ? '当校について' : currentLang === 'bn' ? 'আমাদের পরিচিতি' : 'About Us',
-      partnerCta: currentLang === 'jp' ? '提携のお問い合わせ' : currentLang === 'bn' ? 'পার্টনারশিপ আবেদন' : 'Become a Partner',
-      studentLms: currentLang === 'jp' ? '学生LMSログイン' : currentLang === 'bn' ? 'শিক্ষার্থী এলএমএস' : 'Student LMS',
+      features: currentLang === 'jp' ? 'Nihomi機能' : currentLang === 'bn' ? 'নিহোমি ফিচার' : 'Nihomi Features',
+      analytics: currentLang === 'jp' ? '学習解析' : currentLang === 'bn' ? 'অ্যানালিটিক্স' : 'Analytics',
+      journey: currentLang === 'jp' ? '留学5段階' : currentLang === 'bn' ? 'স্টুডেন্ট জার্নি' : 'Student Journey',
+      leadership: currentLang === 'jp' ? '指導責任者' : currentLang === 'bn' ? 'প্রধান শিক্ষক' : 'Faculty Head',
+      programs: currentLang === 'jp' ? 'プログラム' : currentLang === 'bn' ? 'কোর্সসমূহ' : 'Programs',
+      alumni: currentLang === 'jp' ? 'COE実績' : currentLang === 'bn' ? 'সিওই অর্জন' : 'COE Wall',
+      campuses: currentLang === 'jp' ? '校舎・拠点' : currentLang === 'bn' ? 'ক্যাম্পাস' : 'Campuses',
+      calculator: currentLang === 'jp' ? '費用試算' : currentLang === 'bn' ? 'ফি ক্যালকুলেটর' : 'Tuition Calc',
+      schedule: currentLang === 'jp' ? '時間割' : currentLang === 'bn' ? 'রুটিন' : 'Routine',
+      quickTest: currentLang === 'jp' ? '30秒AIテスト' : currentLang === 'bn' ? '৩০ সে. এআই টেস্ট' : '30s AI Test',
+      inquire: currentLang === 'jp' ? '提携相談' : currentLang === 'bn' ? 'যোগাযোগ' : 'Inquire',
+      studentApp: currentLang === 'jp' ? 'スピード入学' : currentLang === 'bn' ? 'ভর্তি হন' : 'Fast Admission',
+    },
+    calculator: {
+      tag: 'TRANSPARENT TUITION',
+      title: currentLang === 'jp' ? '学費・諸費用シミュレーター (明朗会計)' : currentLang === 'bn' ? 'কোর্স ফি ও ভিসা খরচ ক্যালকুলেটর' : 'Zero Hidden Costs Tuition Simulator',
+      subtitle: currentLang === 'jp' 
+        ? '隠れた追加費用なし。Nihomi AIライセンスや面接指導もすべて内包。' 
+        : currentLang === 'bn'
+        ? 'কোনো গোপন চার্জ নেই। Nihomi AI আনলিমিটেড লাইসেন্স ও এম্বাসি ফাইল অডিট সম্পূর্ণ ফ্রি।'
+        : 'Transparent breakdown with 24/7 Nihomi AI access and embassy file review included.',
     },
     hero: {
-      tag: currentLang === 'jp' ? '日バ連携・次世代日本語教育機関' : currentLang === 'bn' ? 'জাপান-বাংলাদেশ নেক্সট-জেন ইনস্টিটিউট' : 'JAPAN-BANGLADESH NEXT-GEN INSTITUTE',
-      titleJp: 'バングラデシュと日本を繋ぐ、次世代の日本語学校',
-      subtitleEn: 'Bridging Bangladesh and Japan: The Next-Generation Japanese Language School',
-      subtitleBn: 'বাংলাদেশ ও জাপানের মাঝে আস্থার সেতু: পরবর্তী প্রজন্মের জাপানিজ ভাষা ইনস্টিটিউট',
-      desc: currentLang === 'jp'
-        ? '厳格な生活規律とJLPT N1認定講師による対面指導に、24時間365日のAIパーソナライズド学習を融合。日本の教育機関・受入企業の皆様に、最も信頼される現地パートナー。'
+      badge: currentLang === 'jp' ? '日バ連携・規律とAIの日本語教育' : currentLang === 'bn' ? 'শৃঙ্খলা ও এআই নির্ভর জাপানিজ ইনস্টিটিউট' : 'DISCIPLINED JAPANESE + NIHOMI AI',
+      titleJp: 'バングラデシュと日本を繋ぐ、最も規律ある日本語学校',
+      subtitle: currentLang === 'jp' 
+        ? 'JLPT N1認定講師の対面規律指導 × Nihomi.com 24/7 AI学習エンジン' 
         : currentLang === 'bn'
-        ? 'জেএলপিটি এন১ সার্টিফাইড ফ্যাকাল্টির কঠোর নিয়মানুবর্তিতা এবং ২৪/৭ এআই লার্নিং এর সমন্বয়ে গড়া—জাপানের শিক্ষাপ্রতিষ্ঠান ও কর্পোরেশনের সর্বাধিক বিশ্বস্ত অংশীদার।'
-        : 'Providing highly disciplined, JLPT N1-led physical classes combined with 24/7 AI-driven practice. The most reliable partner for Japanese institutions.',
-      ctaPrimary: currentLang === 'jp' ? '提携校・受入機関のご相談' : currentLang === 'bn' ? 'পার্টনার স্কুল আবেদন' : 'Become a Partner School',
-      ctaSecondary: currentLang === 'jp' ? '学生入学案内 (ファームゲート校)' : currentLang === 'bn' ? 'স্টুডেন্ট অ্যাডমিশন' : 'Student Admissions',
-      stats: [
-        {
-          val: '100%',
-          labelJp: '法務省・出入国在留管理庁 法令遵守',
-          labelEn: 'Immigration Legal Compliance',
-          labelBn: '১০০% ইমিগ্রেশন আইন ও সিওই সম্মতি'
-        },
-        {
-          val: '1,500+',
-          labelJp: '日本国内進学・特定技能 渡日実績',
-          labelEn: 'Dispatched Alumni in Japan',
-          labelBn: '১,৫০০+ শিক্ষার্থী জাপানে সফলভাবে কর্মরত ও অধ্যয়নরত'
-        },
-        {
-          val: 'JLPT N1',
-          labelJp: '日本語科 主任専任講師による直轄監修',
-          labelEn: 'N1 Master Instructor Led',
-          labelBn: 'জেএলপিটি এন১ ফ্যাকাল্টির সরাসরি তত্ত্বাবধান'
-        },
-        {
-          val: '24/7 AI',
-          labelJp: 'Nihomi.com 忘却曲線克服トラッキング',
-          labelEn: 'Continuous AI Practice Engine',
-          labelBn: 'নিহোমি এআই রিয়েল-টাইম মেমোরি ট্র্যাকিং'
-        }
+        ? 'জেএলপিটি এন১ ফ্যাকাল্টির কঠোর নিয়মানুবর্তিতা ও Nihomi.com এআই লার্নিং'
+        : 'JLPT N1-Led Physical Discipline × Nihomi.com 24/7 AI Engine',
+      ctaPartner: currentLang === 'jp' ? '提携校・受入企業のご相談' : currentLang === 'bn' ? 'পার্টনারশিপ আবেদন' : 'Partner School Consultation',
+      ctaStudent: currentLang === 'jp' ? '即時コース申込み (2クリック)' : currentLang === 'bn' ? 'দ্রুত ভর্তি ফরম' : 'Instant Course Enrollment',
+      chips: [
+        { label: 'COE 適合率 100%', sub: 'Immigration Compliant' },
+        { label: '渡日実績 1,500名+', sub: 'Dispatched to Japan' },
+        { label: 'JLPT N1 直轄指導', sub: 'Master Instructor Led' },
+        { label: 'Nihomi AI 24/7', sub: 'Memory Retention Engine' }
       ]
     },
     leadership: {
-      eyebrow: currentLang === 'jp' ? '指導陣紹介 / LEADERSHIP & TRUST' : currentLang === 'bn' ? 'নির্ভরযোগ্য অ্যাকাডেমিক নেতৃত্ব' : 'ACADEMIC LEADERSHIP & TRUST',
-      title: currentLang === 'jp' ? '卓越した実績と信頼の指導体制' : currentLang === 'bn' ? 'অভিজ্ঞতা ও আন্তর্জাতিক মানের জাপানিজ পাঠদান' : 'Guided by Excellence & Experience',
+      tag: currentLang === 'jp' ? '指導責任者' : currentLang === 'bn' ? 'প্রধান শিক্ষক ও পরিচালক' : 'ACADEMIC LEADERSHIP',
+      title: currentLang === 'jp' ? '卓越した実績と信頼の指導体制' : currentLang === 'bn' ? 'অভিজ্ঞতা ও আন্তর্জাতিক মানের জাপানিজ পাঠদান' : 'Excellence & Authentic Japanese Discipline',
       name: currentLang === 'jp' ? 'Md. Abdur Razzak (アブドゥル・ラザック)' : currentLang === 'bn' ? 'মোহাম্মদ আব্দুর রাজ্জাক (JLPT N1)' : 'Md. Abdur Razzak',
       role: currentLang === 'jp' ? '日本語科 主任教授 / Managing Director, DILS' : currentLang === 'bn' ? 'হেড অব জাপানিজ ডিপার্টমেন্ট ও ম্যানেজিং ডিরেক্টর, ডিআইএলএস' : 'Head of Japanese Department | Managing Director, DILS',
       quote: currentLang === 'jp'
-        ? '「語学の習得にとどまらず、日本の企業文化や時間厳守、挨拶といった礼儀作法（報連相・お辞儀）を徹底教育。日本社会で即戦力として心から愛される誠実な若者を育て、両国の強固な架け橋となります。」'
+        ? '「言葉の習得だけでなく、時間厳守・礼儀作法（お辞儀と報連相）を徹底教育。日本社会に深く信頼される誠実な若者を育てます。」'
         : currentLang === 'bn'
-        ? '“শুধুমাত্র ভাষা শিক্ষাই নয়; জাপানি কর্মসংস্কৃতি, সময়ানুবর্তিতা ও ব্যবসায়িক শিষ্টাচার (ওজিগি ও হোরেনসো) আমাদের মূল নীতি। আমরা নিষ্ঠাবান মানবসম্পদ গড়ে তুলছি যারা জাপানের মাটিতে আস্থার সাথে অবদান রাখবে।”'
-        : '“Beyond mere language acquisition, we instill Japanese corporate discipline, punctuality, and authentic business etiquette (Ojigi). We nurture sincere Bangladeshi youth into trusted global professionals ready to contribute to Japanese society.”',
-      pillars: [
+        ? '“শুধুমাত্র ভাষা নয়; সময়ানুবর্তিতা, শিষ্টাচার (ওজিগি) ও কর্মসংস্কৃতিতে সৎ তরুণ গড়ে তোলাই আমাদের লক্ষ্য।”'
+        : '“We instill punctuality, respect, and authentic business etiquette (Ojigi & Ho-Ren-So) to nurture sincere youths trusted by Japanese society.”',
+      badges: [
+        { title: '12+ Years Japan Experience', desc: '東京・大阪の日本語学校と長年連携' },
+        { title: 'Zero Document Forgery', desc: '100% 正当な書類審査・入管法令遵守' },
+        { title: 'Daily Ojigi & Etiquette', desc: '毎朝のお辞儀(15°/30°/45°)と挨拶訓練' }
+      ]
+    },
+    nihomiSection: {
+      tag: 'POWERED BY NIHOMI.COM',
+      title: currentLang === 'jp' ? '本校に導入されている Nihomi.com のコア機能' : currentLang === 'bn' ? 'ডিআইএলএস এ ব্যবহৃত নিহোমি.কম এর মূল এআই ফিচারসমূহ' : 'Nihomi.com Core Features Embedded at DILS',
+      subtitle: currentLang === 'jp' 
+        ? '教室での対面指導を、AIが24時間365日復習・定着させます。' 
+        : currentLang === 'bn' 
+        ? 'ক্লাসরুমের পড়া ভুলে যাওয়া রোধে ২৪/৭ সক্রিয় নিহোমি এআই প্রযুক্তি।'
+        : 'Eliminating the forgetting curve with automated, round-the-clock AI reinforcement.',
+      features: [
         {
-          titleJp: '12年以上の査証・教育指導実績',
-          titleEn: '12+ Years Specialized Expertise',
-          titleBn: '১২+ বছরের বিশেষায়িত জাপান ভিসা ও একাডেমি অভিজ্ঞতা',
-          descJp: '東京・大阪・京都をはじめ日本全国の日本語学校・専門学校・大学と連携し、1,500名以上の在留資格認定証明書 (COE) 取得を指導。',
-          descEn: 'Collaborated with prestigious institutions across Tokyo, Osaka, and Kyoto, mentoring 1,500+ successful COE holders.',
-          descBn: 'টোকিও, ওসাকা, কিয়োটোর শীর্ষ স্কুলগুলোর সাথে সরাসরি পার্টনারশিপে ১,৫০০+ সফল শিক্ষার্থীর সিওই অর্জন।'
+          id: 'sensei',
+          icon: Brain,
+          badge: 'FEATURE 01',
+          nameJp: '24/7 AI会話・リアルタイム文法添削',
+          nameEn: 'AI Sensei: 24/7 Speaking Partner',
+          nameBn: '২৪/৭ এআই কথোপকথন ও তাৎক্ষণিক ব্যাকরণ সংশোধন',
+          summary: currentLang === 'jp' 
+            ? 'バングラデシュ人学習者の発音と文法誤りを即時検知し、自然な日本語へ修正。' 
+            : currentLang === 'bn'
+            ? 'ভয়েস ও চ্যাটে কথা বললে এআই সাথে সাথে ভুল পার্টিকল ও উচ্চারণ শুধরে দেয়।'
+            : 'Detects audio pronunciation and particle slips instantly with natural correction.'
         },
         {
-          titleJp: '厳正な書類審査・不法就労防止',
-          titleEn: 'Zero-Document Forgery Guarantee',
-          titleBn: 'শতভাগ স্বচ্ছ ডকুমেন্টেশন ও জিরো রিজেকশন নীতি',
-          descJp: '経費支弁書・就学理由書の徹底した個別精査を実施。虚偽申告を徹底排除し、日本の入管審査における最高水準の信頼を保持。',
-          descEn: 'Personal audit of every student financial profile and Statement of Purpose to maintain pristine immigration integrity.',
-          descBn: 'প্রতিটি শিক্ষার্থীর স্টেটমেন্ট অব পারপাস ও ব্যাংক ফাইল রাজ্জাক স্যারের সরাসরি অডিটের মাধ্যমে অনুমোদিত হয়।'
+          id: 'srs',
+          icon: Zap,
+          badge: 'FEATURE 02',
+          nameJp: 'SRS 忘却曲線フラッシュカード',
+          nameEn: 'Spaced Repetition (SRS) Engine',
+          nameBn: 'এসআরএস স্পেসড মেমোরি ফ্ল্যাশ কার্ড',
+          summary: currentLang === 'jp' 
+            ? '忘却曲線に基づき、忘れそうな単語・漢字(2,000字)を最適な間隔で自動出題。' 
+            : currentLang === 'bn'
+            ? 'ফরগেটিং কার্ভ অনুসারে ঠিক যে শব্দ ভুলে যেতে পারেন, তা মোবাইল স্ক্রিনে রিকল ড্রিল করায়।'
+            : 'Schedules review of Kanji & vocab at the mathematically optimal forgetting interval.'
         },
         {
-          titleJp: '毎日の対面・規律・礼儀作法指導',
-          titleEn: 'Daily Strict Classroom Discipline',
-          titleBn: 'দৈনিক সকালের অভিবাদন, ওজিগি ও জাপানি নিয়মানুবর্তিতা',
-          descJp: '無断遅刻欠席の厳禁、毎朝の「お辞儀 (15°/30°/45°)」実習、敬語・丁寧語の徹底指導により、渡日前から日本社会への適応力を育成。',
-          descEn: 'Strict attendance enforcement, morning bowing drills (Ojigi), and corporate keigo training ensure immediate adaptability.',
-          descBn: 'ক্লাসে সময়মতো উপস্থিতি, প্রতিদিনের ওজিগি প্র্যাকটিস ও ব্যবসায়িক জাপানি শিষ্টাচার শিক্ষার্থীদের প্রথম থেকেই প্রস্তুত করে।'
+          id: 'radar',
+          icon: Target,
+          badge: 'FEATURE 03',
+          nameJp: '弱点自動追跡レーダー',
+          nameEn: 'Smart Mistake Radar',
+          nameBn: 'মিস্টেক ট্র্যাকার ও দুর্বলতা রেডার',
+          summary: currentLang === 'jp' 
+            ? '助詞（は/が/に/で）や動詞活用（て形・ない形）の苦手箇所をAIが可視化。' 
+            : currentLang === 'bn'
+            ? 'পার্টিকল ও ভার্ব ফর্মে যে ভুলগুলো বারবার হয় তা আলাদা করে প্র্যাকটিস করায়।'
+            : 'Diagnoses repeat mistakes in particles and verb forms for focused mastery.'
+        },
+        {
+          id: 'mock',
+          icon: Cpu,
+          badge: 'FEATURE 04',
+          nameJp: 'JLPT 本番仕様タイマー模試',
+          nameEn: 'JLPT CBT Exam Simulator',
+          nameBn: 'জেএলপিটি কম্পিউটার-বেসড মক এক্সাম',
+          summary: currentLang === 'jp' 
+            ? 'N5〜N2の本番と同時間・配点で採点し、合格判定と弱点分野を即時レポート。' 
+            : currentLang === 'bn'
+            ? 'এন৫ থেকে এন২ রিয়েল টাইমড মক টেস্ট এবং তৎক্ষণাৎ স্কোর ও পাস প্রেডিকশন।'
+            : 'Full timed N5–N2 tests with instant pass-fail probability metrics.'
         }
       ]
     },
-    ecosystem: {
-      badge: currentLang === 'jp' ? 'ハイブリッド教育の革新' : currentLang === 'bn' ? 'হাইব্রিড শিক্ষার যুগান্তকারী রূপরেখা' : 'HYBRID EDUCATION INNOVATION',
-      title: currentLang === 'jp' ? 'DILS × Nihomi.com AIパワード・エコシステム' : currentLang === 'bn' ? 'ডিআইএলএস ফিজিক্যাল লার্নিং + নিহোমি ২৪/৭ এআই' : 'Our AI-Powered Ecosystem (DILS + Nihomi.com)',
-      desc: currentLang === 'jp'
-        ? 'ファームゲート校での徹底した対面指導・生活規律と、Nihomi.comの最先端AI記憶定着システムがシームレスに同期。学生の忘却を防ぎ、合格率と定着率をデータで証明します。'
-        : currentLang === 'bn'
-        ? 'ফার্মগেট ক্যাম্পাসের সরাসরি ক্লাসরুম ডিসিপ্লিন এবং Nihomi.com এর এআই ভিত্তিক স্মৃতি-ধরে-রাখার প্রযুক্তির অনবদ্য সমন্বয়। আমরা শুধু পড়াই না, ডেটার সাহায্যে প্রতিটি শিক্ষার্থীর ফলাফল নিশ্চিত করি।'
-        : 'Physical classroom discipline at DILS Farmgate campus seamlessly synchronizes with continuous AI learning on Nihomi.com. We don’t just teach; we track, predict, and ensure student success using data.',
-      tabs: {
-        infra: currentLang === 'jp' ? '教育インフラ構成' : currentLang === 'bn' ? 'ইনফ্রাস্ট্রাকচার ম্যাপ' : 'System Architecture',
-        radar: currentLang === 'jp' ? 'リアルタイム弱点分析' : currentLang === 'bn' ? 'মিস্টেক রেডার' : 'Weakness Radar',
-        srs: currentLang === 'jp' ? '忘却曲線克服 (SRS)' : currentLang === 'bn' ? 'এসআরএস ভোকাব' : 'SRS Retention Curve'
-      }
-    },
-    services: {
-      badge: currentLang === 'jp' ? '提供プログラム & B2Bソリューション' : currentLang === 'bn' ? 'আমাদের বিশেষায়িত প্রোগ্রামসমূহ' : 'SERVICES & EXPERTISE',
-      title: currentLang === 'jp' ? '日本の教育機関・受入機関向け 4大重点プログラム' : currentLang === 'bn' ? 'জাপানের শীর্ষ স্ট্যান্ডার্ডে ৪টি বিশেষায়িত কারিকুলাম' : 'Our Specialized Japanese Programs (MUJI Standard)',
-      desc: currentLang === 'jp'
-        ? '日本の出入国在留管理法および企業実務に完全準拠した、無駄のない洗練された指導体系。'
-        : currentLang === 'bn'
-        ? 'জাপান সরকারের নিয়মাবলী এবং প্রাতিষ্ঠানিক স্ট্যান্ডার্ডের সাথে শতভাগ সামঞ্জস্য রেখে তৈরি প্রিমিয়াম কারিকুলাম।'
-        : 'Carefully curated minimalist curricula compliant with Japanese Immigration and corporate workplace standards.',
+    programs: {
+      tag: 'CURRICULUM',
+      title: currentLang === 'jp' ? '提供プログラム (無駄のない4つの重点指導)' : currentLang === 'bn' ? '৪টি মূল জাপানিজ প্রোগ্রাম' : 'Core Programs (Minimalist Standard)',
       items: [
         {
+          id: 'c-jp-n5',
           num: '01',
-          titleJp: 'JLPT & NAT-TEST 徹底合格対策',
-          titleEn: 'JLPT & NAT-TEST Preparation',
-          titleBn: 'জেএলপিটি ও ন্যাট-টেস্ট স্পেশাল প্রিপারেশন',
-          subtitleJp: 'N5からN2まで、過去問分析と聴解集中特訓',
-          subtitleEn: 'Comprehensive N5 to N2 Mastery with Acoustic Listening Labs',
-          subtitleBn: 'এন৫ থেকে এন২ পর্যন্ত রিয়েল প্রশ্নপত্র সমাধান ও লিসেনিং ড্রিল',
-          features: [
-            currentLang === 'jp' ? '最新出題傾向に準拠した模擬試験を毎週実施' : currentLang === 'bn' ? 'প্রতি সপ্তাহে ফুল-লেংথ টাইমড মক টেস্ট' : 'Weekly full-length timed mock examinations',
-            currentLang === 'jp' ? 'ネイティブ音源による音響スタジオ聴解トレーニング' : currentLang === 'bn' ? 'স্টুডিও কোয়ালিটি জাপানিজ অডিও ল্যাব প্র্যাকটিস' : 'Studio acoustic listening comprehension drills',
-            currentLang === 'jp' ? '漢字2,000字・語彙10,000語の書き取り・筆順指導' : currentLang === 'bn' ? 'কাঞ্জি স্ট্রোক-অর্ডার ও সঠিক অর্থ মুখস্থকরণ' : 'Rigorous Kanji stroke-order and vocabulary retention'
-          ]
+          name: currentLang === 'jp' ? 'JLPT N5 基礎合格コース' : 'JLPT N5 Beginner Foundation',
+          desc: currentLang === 'jp' ? 'N5過去問集中分析・ひらがな・カタカナ・基本文法' : 'Hiragana, Katakana, basic grammar & N5 mock drill.',
+          pills: ['JLPT N5', 'NAT-TEST 5Q', 'Daily Nihomi AI'],
+          fee: '৳12,000 / 3 Months'
         },
         {
+          id: 'c-jp-n4',
           num: '02',
-          titleJp: '特定技能 (SSW) 専門育成プログラム',
-          titleEn: 'Specified Skilled Worker (SSW) Training',
-          titleBn: 'স্পেসিফাইড স্কিল্ড ওয়ার্কার (SSW) ট্রেনিং',
-          subtitleJp: '介護・外食・ビルクリーニング・製造業向け特化教育',
-          subtitleEn: 'Caregiving, Food Service, and Building Maintenance Readiness',
-          subtitleBn: 'কেয়ারগিভার, ফুড সার্ভিস এবং টেকনিক্যাল ট্রেড প্রস্তুতি',
-          features: [
-            currentLang === 'jp' ? '各業界専門用語および技能評価試験の直前対策' : currentLang === 'bn' ? 'ইন্ডাস্ট্রি-স্পেসিফিক জাপানিজ শব্দভাণ্ডার' : 'Industry-specific technical vocabulary training',
-            currentLang === 'jp' ? '日本の職場安全基準・5S活動（整理・整頓・清掃・清潔・躾）の体得' : currentLang === 'bn' ? 'জাপানিজ ৫-এস (5S) ওয়ার্কপ্লেস স্ট্যান্ডার্ড শিক্ষা' : '5S Japanese workplace hygiene & safety doctrine',
-            currentLang === 'jp' ? '登録支援機関・監理団体との直接オンライン面接支援' : currentLang === 'bn' ? 'জাপানি কোম্পানির সাথে সরাসরি অনলাইন ইন্টারভিউ সাপোর্ট' : 'Direct online interview coordination with Japanese firms'
-          ]
+          name: currentLang === 'jp' ? 'JLPT N4 中級特訓コース' : 'JLPT N4 Intermediate Mastery',
+          desc: currentLang === 'jp' ? '複合動詞・敬語・聴解集中音響スタジオ' : 'Compound verbs, keigo intro & acoustic listening lab.',
+          pills: ['JLPT N4', 'Listening Labs', 'COE Ready'],
+          fee: '৳14,000 / 3 Months'
         },
         {
+          id: 'c-jp-ssw',
           num: '03',
-          titleJp: '在留資格認定証明書 (COE) 完全法令遵守',
-          titleEn: 'COE & Visa Processing (100% Legal Compliance)',
-          titleBn: 'সিওই ও ভিসা প্রসেসিং (১০০% আইনি স্বচ্ছতা)',
-          subtitleJp: '書類偽造を一切排除した最高水準の適正申請',
-          subtitleEn: 'Zero-Document Forgery Guarantee & Ministry Audit Standards',
-          subtitleBn: 'কোনো ভুয়া ডকুমেন্ট ছাড়া ১০০% বৈধ কাগজপত্র প্রক্রিয়াকরণ',
-          features: [
-            currentLang === 'jp' ? '日本語科主任講師による経費支弁書・就学理由書の全件検閲' : currentLang === 'bn' ? 'রাজ্জাক স্যারের তত্ত্বাবধানে এসওপি ফাইল নিরীক্ষণ' : 'Rigorous 1-on-1 vetting of student sponsor profiles',
-            currentLang === 'jp' ? '日本大使館面接および入管電話確認の模擬質疑応答訓練' : currentLang === 'bn' ? 'এম্বাসি ইন্টারভিউ ও ভেরিফিকেশন কল প্র্যাকটিস' : 'Embassy interview and immigration phone-call drills',
-            currentLang === 'jp' ? '提携校へ透明性の高いデジタル書類共有システム' : currentLang === 'bn' ? 'জাপান পার্টনারদের জন্য নিরাপদ ক্লাউড ডকুমেন্ট অ্যাক্সেস' : 'Encrypted cloud document dispatch to Japanese schools'
-          ]
+          name: currentLang === 'jp' ? '特定技能 (SSW) 育成コース' : 'Specified Skilled Worker (SSW)',
+          desc: currentLang === 'jp' ? '介護・外食・製造の専門用語と5S職場規律' : 'Caregiving & food service technical vocab with 5S.',
+          pills: ['Caregiving', 'Food Service', 'Direct Interview'],
+          fee: '৳15,000 / 3 Months'
         },
         {
+          id: 'c-jp-biz',
           num: '04',
-          titleJp: '日本ビジネスマナー & お辞儀・報連相教育',
-          titleEn: 'Business Etiquette & Ojigi (Bowing) Training',
-          titleBn: 'জাপানিজ বিজনেস এটিকেট ও ওজিগি (নমস্কার) শিক্ষা',
-          subtitleJp: '日本社会に即座に溶け込む礼儀正しい人格形成',
-          subtitleEn: 'Cultural Adaptation, Respect & Corporate Communication',
-          subtitleBn: 'জাপানি কর্পোরেট কালচার, শ্রদ্ধা ও আদব-কায়দা প্রশিক্ষণ',
-          features: [
-            currentLang === 'jp' ? '会釈(15°)・敬礼(30°)・最敬礼(45°)の角度測定訓練' : currentLang === 'bn' ? '১৫°, ৩০° ও ৪৫° কোণে নিখুঁত ওজিগি ড্রিল' : 'Precise 15°, 30°, and 45° bowing posture drills',
-            currentLang === 'jp' ? '「報告・連絡・相談」(報連相) の実務シミュレーション' : currentLang === 'bn' ? 'হোরেনসো (রিপোর্ট-যোগাযোগ-পরামর্শ) রিয়েল প্র্যাকটিস' : 'Hands-on Ho-Ren-So daily business reporting drills',
-            currentLang === 'jp' ? '日本式のゴミ分別・時間厳守・共同生活ルール指導' : currentLang === 'bn' ? 'জাপানের বর্জ্য ব্যবস্থাপনা ও সার্বক্ষণিক সময়ানুবর্তিতা' : 'Japanese domestic etiquette: recycling & absolute punctuality'
-          ]
+          name: currentLang === 'jp' ? '日本ビジネスマナー・お辞儀' : 'Business Etiquette & Ojigi',
+          desc: currentLang === 'jp' ? '毎朝のお辞儀(15°/30°/45°)と報連相の実践' : 'Precise bowing posture and Ho-Ren-So daily reporting.',
+          pills: ['15°/30°/45° Bow', 'Ho-Ren-So', 'Time Punctuality'],
+          fee: '৳8,000 / 1 Month'
         }
       ]
     },
-    partnersSection: {
-      badge: currentLang === 'jp' ? '提携ネットワーク' : currentLang === 'bn' ? 'পার্টনারশিপ প্ল্যাটফর্ম' : 'PARTNERSHIP NETWORK',
-      title: currentLang === 'jp' ? '日本の教育機関・監理団体の皆様へ' : currentLang === 'bn' ? 'জাপানিজ ল্যাঙ্গুয়েজ স্কুল পার্টনারদের জন্য' : 'To Japanese Language Schools & Sponsoring Institutions',
+    alumniSection: {
+      tag: 'COE & VISA TRACK RECORD',
+      title: currentLang === 'jp' ? '在留資格認定証明書 (COE) 交付実績' : currentLang === 'bn' ? 'সফল শিক্ষার্থীদের সিওই ও ভিসা গ্যালারি' : 'Verified Alumni COE & Visa Wall',
+      subtitle: currentLang === 'jp' 
+        ? '日本の各地方出入国在留管理局より認可された真正な実績。' 
+        : currentLang === 'bn' 
+        ? 'টোকিও, ওসাকা, নাগোয়ার অনুমোদিত শিক্ষাপ্রতিষ্ঠানে শিক্ষার্থীদের সত্যনিষ্ঠ সফলতা।'
+        : 'Genuine COE certifications authorized by Japanese Regional Immigration Bureaus.',
+    },
+    verifySection: {
+      tag: 'ZERO-FORGERY SECURITY',
+      title: currentLang === 'jp' ? '暗号化QRコードによる真正性検証システム' : currentLang === 'bn' ? 'ক্রিপ্টোগ্রাফিক কিউআর ভেরিফিকেশন ও জিরো-ফোরজারি' : 'Cryptographic QR Verification System',
       desc: currentLang === 'jp'
-        ? 'DILSダッカは、優秀で誠実、かつ日本のマナーを身につけたバングラデシュ人材を継続的にご紹介する現地直轄アカデミーです。'
+        ? 'DILS発行の修了証・推薦状はすべて暗号化QRコードを搭載。日本の入管審査官および提携校様が即座に原本確認可能。'
         : currentLang === 'bn'
-        ? 'আমরা জাপানের যেকোনো প্রতিষ্ঠানের জন্য দায়িত্বশীল, সুশৃঙ্খল ও জাপানি কালচারে অভ্যস্ত শিক্ষার্থীদের সরাসরি সমন্বয় করি।'
-        : 'DILS Dhaka is your trusted, on-the-ground institution producing disciplined, culturally trained students tailored for your intake.',
-      steps: [
-        {
-          step: 'STEP 01',
-          titleJp: 'オンライン個別面談',
-          titleEn: 'Institutional Video Conference',
-          titleBn: 'অনলাইন পার্টনারশিপ মিটিং',
-          descJp: '日本の貴校担当者様とZoom等でご要望（定員、求める人材像、学費条件）を協議。'
-        },
-        {
-          step: 'STEP 02',
-          titleJp: '事前スクリーニング・推薦',
-          titleEn: 'Rigorous Candidate Screening',
-          titleBn: 'যোগ্য শিক্ষার্থী বাছাই ও ইন্টারভিউ',
-          descJp: '成績・出席率・経費支弁能力の審査をクリアした厳選候補者を推薦。'
-        },
-        {
-          step: 'STEP 03',
-          titleJp: 'オンライン面接・採用内定',
-          titleEn: 'Live Student Online Interview',
-          titleBn: 'জাপানিজ টিচারদের সরাসরি ইন্টারভিউ',
-          descJp: '貴校の先生方と学生の直接面接を実施。合否判定と学習課題の設定。'
-        },
-        {
-          step: 'STEP 04',
-          titleJp: '渡日前AI強化学習 & 訪日',
-          titleEn: 'Pre-Departure AI Sprint & Dispatch',
-          titleBn: 'নিহোমি এআই প্র্যাকটিস ও সফলভাবে জাপান গমন',
-          descJp: 'COE交付後もNihomi.comで渡日直前まで学習を継続。空港到着時から即適応。'
-        }
-      ]
+        ? 'ডিআইএলএস এর প্রতিটি সার্টিফিকেট কিউআর কোডযুক্ত, যা জাপানি ইমিগ্রেশন ও পার্টনার স্কুলগুলো ১ সেকেন্ডেই অনলাইনে যাচাই করতে পারে।'
+        : 'Every DILS certificate carries a tamper-proof cryptographic QR code verified instantly by Japanese Immigration and partner schools.',
     },
-    footer: {
-      title: currentLang === 'jp' ? 'ダッカ国際語学学校 (DILS)' : currentLang === 'bn' ? 'ঢাকা ইন্টারন্যাশনাল ল্যাঙ্গুয়েজ স্কুল (ডিআইএলএস)' : 'Dhaka International Language School (DILS)',
-      sub: currentLang === 'jp' ? 'バングラデシュ国ダッカ市認定・日本語教育および渡日支援機関' : currentLang === 'bn' ? 'জাপানিজ ল্যাঙ্গুয়েজ লার্নিং অ্যান্ড জাপান ভিসা প্রিপারেশন সেন্টার' : 'Japanese Language Education & Japan Visa Preparation Center',
-      dhakaOffice: currentLang === 'jp' ? '【ダッカ本部校】' : currentLang === 'bn' ? '【ফার্মগেট মেইন ক্যাম্পাস】' : '【Dhaka Headquarters】',
-      dhakaAddress: '7th Floor, BTI Central Plaza, 95 Green Road, Farmgate, Dhaka 1215, Bangladesh',
-      tokyoOffice: currentLang === 'jp' ? '【東京連絡窓口】' : currentLang === 'bn' ? '【টোকিও রিপ্রেজেন্টেটিভ ডেস্ক】' : '【Tokyo Liaison Desk】',
-      tokyoAddress: 'Shinjuku-ku, Tokyo 160-0023, Japan (東京都新宿区西新宿)',
-      trustBadges: [
-        currentLang === 'jp' ? '法務省 出入国在留管理庁 基準適合校' : currentLang === 'bn' ? 'জাপান ইমিগ্রেশন কমপ্লায়েন্ট স্ট্যান্ডার্ড' : 'Japan Immigration Compliant Standard',
-        currentLang === 'jp' ? 'JLPT・NAT-TEST 公式対策認定校' : currentLang === 'bn' ? 'জেএলপিটি ও ন্যাট-টেস্ট রেজিস্টার্ড কোচিং' : 'Registered JLPT / NAT-TEST Center',
-        currentLang === 'jp' ? '100% 真正証明書発行・QR照会' : currentLang === 'bn' ? '১০০% ভেরিফায়েবল কিউআর সার্টিফিকেট' : '100% Cryptographic QR Verifiable Credentials'
-      ],
-      copyright: '© 2026 Dhaka International Language School (DILS). All Rights Reserved. Powered by Nihomi.com AI Engine.'
+    steps: {
+      tag: 'B2B PARTNERSHIP',
+      title: currentLang === 'jp' ? '日本の教育機関様との連携ステップ' : currentLang === 'bn' ? 'জাপানিজ পার্টনারশিপের ৪টি সহজ ধাপ' : '4-Step Partnership Workflow',
+      items: [
+        { step: '01', title: 'Zoom Consultation', descJp: 'ご要望や定員のオンライン面談' },
+        { step: '02', title: 'Candidate Screening', descJp: '成績・出席率・意欲の厳格な選考' },
+        { step: '03', title: 'Direct Interview', descJp: '日本の先生方とのオンライン直接面接' },
+        { step: '04', title: 'COE & Pre-Departure', descJp: '在留資格申請とNihomi渡日前特訓' }
+      ]
     }
   };
+
+  // Simulated AI dialogue samples
+  const dialogueSamples = [
+    {
+      student: 'わたし は がくせい です。(Watashi wa gakusei desu.)',
+      audioWord: 'わたしはがくせいです',
+      sensei: 'すばらしい！助詞「は」の使い方が正しいです。(Excellent! Correct particle!)',
+      accuracy: '98% Speech Accuracy'
+    },
+    {
+      student: 'あした とうきょう に いきます。(Ashita Tokyo ni ikimasu.)',
+      audioWord: 'あしたとうきょうにいきます',
+      sensei: 'パーフェクト！行き先を示す「に」が自然です。(Natural destination particle!)',
+      accuracy: '100% Pronunciation Score'
+    },
+    {
+      student: 'きのう えいが を みました。(Kinou eiga wo mimashita.)',
+      audioWord: 'きのうえいがをみました',
+      sensei: '合格！過去形「〜ました」も完璧です。(Past tense form mastered!)',
+      accuracy: '96% JLPT N5 Benchmark'
+    }
+  ];
 
   const handlePartnerSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -347,113 +455,126 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
         orgType: 'language_school',
         contactPerson: '',
         email: '',
-        phone: '',
         locationInJapan: 'Tokyo',
         notes: '',
         submitted: false
       });
-    }, 2400);
+    }, 2000);
+  };
+
+  const handleFastAdmissionSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdmissionForm(prev => ({ ...prev, submitted: true }));
+    setTimeout(() => {
+      setFastAdmissionOpen(false);
+      setAdmissionForm({ fullName: '', phone: '', submitted: false });
+    }, 2500);
+  };
+
+  const handleAnswerQuestion = (index: number) => {
+    setSelectedChoice(index);
+    const isCorrect = testQuestions[testCurrentQ].options[index].isCorrect;
+    if (isCorrect) setTestScore(prev => prev + 1);
+
+    setTimeout(() => {
+      if (testCurrentQ + 1 < testQuestions.length) {
+        setTestCurrentQ(prev => prev + 1);
+        setSelectedChoice(null);
+      } else {
+        setTestCompleted(true);
+      }
+    }, 800);
+  };
+
+  const resetTest = () => {
+    setTestCurrentQ(0);
+    setTestScore(0);
+    setSelectedChoice(null);
+    setTestCompleted(false);
   };
 
   return (
     <div className="min-h-screen bg-[#070D1E] text-slate-100 font-sans selection:bg-red-600 selection:text-white relative overflow-x-hidden antialiased">
       
       {/* =========================================================================
-          1. GLOBAL TOP UTILITY BAR (Live Dual Clocks, Trilingual Switcher, Partner Login)
+          1. GLOBAL TOP UTILITY BAR (Live Dual Clocks & Minimalist Language Switcher)
          ========================================================================= */}
       <div className="bg-[#050915] border-b border-indigo-950/80 px-4 sm:px-8 py-2 text-xs text-slate-300 relative z-50">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
           
           {/* Dual Clocks (Tokyo & Dhaka) */}
-          <div className="flex items-center flex-wrap gap-2.5 sm:gap-4">
-            
-            {/* Tokyo Live Clock */}
-            <div className="inline-flex items-center gap-1.5 bg-indigo-950/50 border border-red-500/30 px-3 py-1 rounded-full shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-              <span className="font-semibold text-slate-200 tracking-wider">
-                {t.top.tokyo} (JST):
-              </span>
-              <span className="font-mono text-red-400 font-bold tracking-tight">
-                {tokyoTime || '09:00:00'}
-              </span>
+          <div className="flex items-center gap-3">
+            <div className="inline-flex items-center gap-1.5 bg-indigo-950/40 border border-red-500/30 px-2.5 py-0.5 rounded-full text-[11px]">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+              <span className="font-semibold text-slate-300">{t.top.tokyo}:</span>
+              <span className="font-mono text-red-400 font-bold">{tokyoTime || '09:00'}</span>
             </div>
 
-            {/* Dhaka Live Clock */}
-            <div className="inline-flex items-center gap-1.5 bg-indigo-950/50 border border-emerald-500/30 px-3 py-1 rounded-full shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span className="font-semibold text-slate-200 tracking-wider">
-                {t.top.dhaka} (BST):
-              </span>
-              <span className="font-mono text-emerald-400 font-bold tracking-tight">
-                {dhakaTime || '06:00:00 AM'}
-              </span>
+            <div className="inline-flex items-center gap-1.5 bg-indigo-950/40 border border-emerald-500/30 px-2.5 py-0.5 rounded-full text-[11px]">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span className="font-semibold text-slate-300">{t.top.dhaka}:</span>
+              <span className="font-mono text-emerald-400 font-bold">{dhakaTime || '06:00'}</span>
             </div>
 
-            <span className="hidden xl:inline text-slate-400 text-[11px] font-medium pl-2 border-l border-slate-800">
-              Farmgate Campus: 7th Floor, BTI Central Plaza, 95 Green Road, Dhaka
+            <span className="hidden md:inline text-slate-400 text-[11px] font-mono border-l border-slate-800 pl-3">
+              Farmgate Campus, 95 Green Road, Dhaka
             </span>
           </div>
 
-          {/* Right Actions: Certificate Verification, Partner Portal, Trilingual Switcher */}
-          <div className="flex items-center gap-3 ml-auto">
-            
-            {/* Quick Certificate Verify Button */}
+          {/* Right Actions: QR Verify, Partner Login, Switcher */}
+          <div className="flex items-center gap-2.5 ml-auto">
             <button
               onClick={() => onOpenValidator && onOpenValidator('DILS-CERT-2026-0048')}
-              className="hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold text-amber-300 hover:text-amber-200 bg-amber-950/40 border border-amber-800/60 px-2.5 py-1 rounded-md transition-all hover:bg-amber-900/40"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-300 bg-amber-950/30 border border-amber-800/50 px-2 py-0.5 rounded hover:bg-amber-900/30 transition-colors"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-              <span>{t.top.verifyBtn}</span>
+              <ShieldCheck className="w-3 h-3 text-amber-400" />
+              <span>{t.top.verify}</span>
             </button>
 
-            {/* Partner Portal Shortcut */}
             <button
               onClick={() => setPartnerModalOpen(true)}
-              className="inline-flex items-center gap-1.5 text-[11px] font-bold text-white bg-indigo-900/60 hover:bg-indigo-800/80 border border-indigo-700/60 px-2.5 py-1 rounded-md transition-all shadow-sm"
+              className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold text-white bg-indigo-900/50 hover:bg-indigo-800/70 border border-indigo-700/50 px-2.5 py-0.5 rounded transition-all"
             >
-              <Building2 className="w-3.5 h-3.5 text-red-400" />
-              <span>{t.top.partnerLogin}</span>
+              <Building2 className="w-3 h-3 text-red-400" />
+              <span>{t.top.partnerBtn}</span>
             </button>
 
-            {/* PROMINENT MULTILINGUAL SWITCHER (日本語 | English | বাংলা) */}
-            <div className="flex items-center bg-[#0B142A] border border-indigo-900/80 rounded-lg p-0.5 shadow-inner">
+            <button
+              onClick={handleInstallPwa}
+              className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-300 bg-amber-950/40 hover:bg-amber-900/50 border border-amber-800/60 px-2 py-0.5 rounded transition-all"
+              title="Install DILS Mobile App"
+            >
+              <Smartphone className="w-3 h-3 text-amber-400" />
+              <span>{currentLang === 'jp' ? 'アプリ導入' : currentLang === 'bn' ? 'অ্যাপ ইনস্টল' : 'App Install'}</span>
+            </button>
+
+            {/* Trilingual Pill Switcher */}
+            <div className="flex items-center bg-[#0B142A] border border-indigo-900/70 rounded p-0.5">
               <button
                 onClick={() => setCurrentLang('jp')}
-                className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all ${
-                  currentLang === 'jp'
-                    ? 'bg-red-600 text-white shadow-md shadow-red-950/60'
-                    : 'text-slate-400 hover:text-slate-100'
+                className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all ${
+                  currentLang === 'jp' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white'
                 }`}
-                title="日本語 (Japanese)"
               >
                 日本語
               </button>
-
               <button
                 onClick={() => setCurrentLang('en')}
-                className={`px-2 py-1 rounded-md text-xs font-semibold transition-all ${
-                  currentLang === 'en'
-                    ? 'bg-red-600 text-white shadow-md shadow-red-950/60'
-                    : 'text-slate-400 hover:text-slate-100'
+                className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all ${
+                  currentLang === 'en' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white'
                 }`}
-                title="English"
               >
                 EN
               </button>
-
               <button
                 onClick={() => setCurrentLang('bn')}
-                className={`px-2 py-1 rounded-md text-xs font-semibold transition-all ${
-                  currentLang === 'bn'
-                    ? 'bg-red-600 text-white shadow-md shadow-red-950/60'
-                    : 'text-slate-400 hover:text-slate-100'
+                className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all ${
+                  currentLang === 'bn' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white'
                 }`}
-                title="বাংলা (Bangla)"
               >
                 বাংলা
               </button>
             </div>
-
           </div>
 
         </div>
@@ -461,158 +582,162 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
 
 
       {/* =========================================================================
-          2. MAIN CORPORATE NAVIGATION BAR (Apple / MUJI Minimalist Aesthetic)
+          2. MINIMALIST APPLE/MUJI NAVIGATION
          ========================================================================= */}
-      <nav className="sticky top-0 z-40 bg-[#070D1E]/95 backdrop-blur-xl border-b border-indigo-950/60 transition-all duration-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 h-20 flex items-center justify-between gap-6">
+      <nav className="sticky top-0 z-40 bg-[#070D1E]/95 backdrop-blur-xl border-b border-indigo-950/60">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between gap-4">
           
-          {/* Logo & Institute Brand */}
-          <a href="#" className="flex items-center gap-3.5 group select-none">
-            {/* Minimalist Japanese Crest Logo */}
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-red-600 via-red-700 to-indigo-950 flex items-center justify-center shadow-lg shadow-red-950/40 border border-red-500/40 group-hover:scale-105 transition-transform">
-              <span className="text-white font-black text-xl tracking-tighter font-serif">DILS</span>
+          {/* Logo */}
+          <a href="#" className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-red-600 to-indigo-950 flex items-center justify-center border border-red-500/40">
+              <span className="text-white font-black text-base font-serif">DILS</span>
             </div>
-
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xl font-black tracking-tight text-white group-hover:text-red-400 transition-colors">
-                  DILS Dhaka
-                </span>
-                <span className="bg-red-950/90 text-red-400 border border-red-800/80 text-[10px] px-2 py-0.5 rounded-full font-mono font-bold tracking-wide">
-                  JAPAN 100%
+              <div className="flex items-center gap-1.5">
+                <span className="text-base font-black tracking-tight text-white">DILS Dhaka</span>
+                <span className="bg-red-950 text-red-400 border border-red-800 text-[9px] px-1.5 py-0.2 rounded font-mono font-bold">
+                  JAPAN
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 font-medium tracking-wide">
-                ダッカ国際語学学校 • Dhaka International Language School
-              </p>
+              <p className="text-[10px] text-slate-400 font-mono">ダッカ国際語学学校</p>
             </div>
           </a>
 
           {/* Desktop Nav Links */}
-          <div className="hidden lg:flex items-center gap-7 text-sm font-medium text-slate-300">
-            <a href="#partners" className="hover:text-white hover:text-red-400 transition-colors py-1">
-              {t.nav.partners}
+          <div className="hidden md:flex items-center gap-5 text-xs font-semibold text-slate-300">
+            <a href="#nihomi-features" className="hover:text-red-400 transition-colors flex items-center gap-1">
+              <Brain className="w-3.5 h-3.5 text-amber-400" />
+              <span>{t.nav.features}</span>
             </a>
-            <a href="#curriculum" className="hover:text-white hover:text-red-400 transition-colors py-1">
-              {t.nav.curriculum}
+            <a href="#analytics" className="hover:text-red-400 transition-colors flex items-center gap-1">
+              <Activity className="w-3.5 h-3.5 text-red-400" />
+              <span>{t.nav.analytics}</span>
             </a>
-            <a href="#ecosystem" className="hover:text-white hover:text-red-400 transition-colors py-1 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>{t.nav.aiEcosystem}</span>
+            <a href="#student-journey" className="hover:text-red-400 transition-colors flex items-center gap-1">
+              <Compass className="w-3.5 h-3.5 text-emerald-400" />
+              <span>{t.nav.journey}</span>
             </a>
-            <a href="#leadership" className="hover:text-white hover:text-red-400 transition-colors py-1 flex items-center gap-1.5">
+            <button 
+              onClick={() => { resetTest(); setQuickTestOpen(true); }}
+              className="text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 transition-colors"
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-400" />
+              <span>{t.nav.quickTest}</span>
+            </button>
+            <a href="#leadership" className="hover:text-red-400 transition-colors">
+              {t.nav.leadership}
+            </a>
+            <a href="#programs" className="hover:text-red-400 transition-colors">
+              {t.nav.programs}
+            </a>
+            <a href="#cost-calculator" className="hover:text-red-400 transition-colors flex items-center gap-1">
+              <Calculator className="w-3.5 h-3.5 text-red-400" />
+              <span>{t.nav.calculator}</span>
+            </a>
+            <button
+              onClick={() => setScheduleModalOpen(true)}
+              className="hover:text-amber-300 text-slate-300 font-semibold flex items-center gap-1 transition-colors"
+            >
+              <Calendar className="w-3.5 h-3.5 text-amber-400" />
+              <span>{t.nav.schedule}</span>
+            </button>
+            <a href="#alumni-coe" className="hover:text-red-400 transition-colors flex items-center gap-1">
               <Award className="w-3.5 h-3.5 text-red-400" />
-              <span>{t.nav.leadership}</span>
+              <span>{t.nav.alumni}</span>
             </a>
-            <a href="#services" className="hover:text-white hover:text-red-400 transition-colors py-1">
-              {t.nav.services}
-            </a>
-            <a href="#about-us" className="hover:text-white hover:text-red-400 transition-colors py-1">
-              {t.nav.about}
+            <a href="#campuses" className="hover:text-red-400 transition-colors">
+              {t.nav.campuses}
             </a>
           </div>
 
-          {/* Nav Right CTA Buttons */}
-          <div className="hidden sm:flex items-center gap-3">
+          {/* Nav Right CTA */}
+          <div className="hidden sm:flex items-center gap-2.5">
             <button
               onClick={() => setPartnerModalOpen(true)}
-              className="px-4 py-2.5 text-xs font-bold text-slate-100 bg-[#0E1B38] hover:bg-[#14264E] border border-indigo-700/60 hover:border-red-500/60 rounded-xl transition-all shadow-sm flex items-center gap-2"
+              className="px-3.5 py-1.5 text-xs font-bold text-slate-100 bg-[#0E1B38] hover:bg-[#14264E] border border-indigo-700/60 rounded-lg transition-all"
             >
-              <Building2 className="w-3.5 h-3.5 text-red-400" />
-              <span>{t.nav.partnerCta}</span>
+              {t.nav.inquire}
             </button>
-
             <button
-              onClick={() => onSwitchToStudentPortal && onSwitchToStudentPortal('c-jp-n5')}
-              className="px-5 py-2.5 text-xs font-bold text-white bg-red-600 hover:bg-red-500 rounded-xl shadow-lg shadow-red-950/60 transition-transform active:scale-95 flex items-center gap-2"
+              onClick={() => setFastAdmissionOpen(true)}
+              className="px-4 py-1.5 text-xs font-bold text-white bg-red-600 hover:bg-red-500 rounded-lg shadow-md shadow-red-950/60 transition-all flex items-center gap-1.5"
             >
               <GraduationCap className="w-3.5 h-3.5" />
-              <span>{t.nav.studentLms}</span>
+              <span>{t.nav.studentApp}</span>
             </button>
           </div>
 
-          {/* Mobile Menu Toggle */}
+          {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 rounded-xl bg-indigo-950/60 border border-indigo-800 text-slate-300 hover:text-white min-h-[44px] min-w-[44px] flex items-center justify-center"
-            aria-label="Toggle Navigation"
+            className="md:hidden p-2 rounded-lg bg-indigo-950/60 border border-indigo-800 text-slate-300"
           >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </button>
-
         </div>
 
-        {/* Mobile Dropdown Menu */}
+        {/* Mobile Dropdown */}
         {mobileMenuOpen && (
-          <div className="lg:hidden bg-[#060B19]/98 border-b border-indigo-950 px-6 py-6 space-y-4 backdrop-blur-2xl">
-            <div className="flex flex-col space-y-3 text-sm font-medium">
-              <a 
-                href="#partners" 
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-slate-200 hover:text-red-400 py-1.5"
-              >
-                {t.nav.partners}
-              </a>
-              <a 
-                href="#curriculum" 
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-slate-200 hover:text-red-400 py-1.5"
-              >
-                {t.nav.curriculum}
-              </a>
-              <a 
-                href="#ecosystem" 
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-slate-200 hover:text-red-400 py-1.5 flex items-center gap-2"
-              >
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                <span>{t.nav.aiEcosystem}</span>
-              </a>
-              <a 
-                href="#leadership" 
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-slate-200 hover:text-red-400 py-1.5 flex items-center gap-2"
-              >
-                <Award className="w-4 h-4 text-red-400" />
-                <span>{t.nav.leadership}</span>
-              </a>
-              <a 
-                href="#services" 
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-slate-200 hover:text-red-400 py-1.5"
-              >
-                {t.nav.services}
-              </a>
-              <a 
-                href="#about-us" 
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-slate-200 hover:text-red-400 py-1.5"
-              >
-                {t.nav.about}
-              </a>
-            </div>
-
-            <div className="pt-4 border-t border-indigo-950/80 flex flex-col gap-2.5">
+          <div className="md:hidden bg-[#060B19]/98 border-b border-indigo-950 px-6 py-4 space-y-3 text-xs font-semibold">
+            <a href="#nihomi-features" onClick={() => setMobileMenuOpen(false)} className="block py-1 text-slate-200">
+              {t.nav.features}
+            </a>
+            <a href="#analytics" onClick={() => setMobileMenuOpen(false)} className="block py-1 text-red-400 font-bold flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5 text-red-400" />
+              <span>{t.nav.analytics}</span>
+            </a>
+            <a href="#student-journey" onClick={() => setMobileMenuOpen(false)} className="block py-1 text-emerald-400 font-bold flex items-center gap-1.5">
+              <Compass className="w-3.5 h-3.5 text-emerald-400" />
+              <span>{t.nav.journey}</span>
+            </a>
+            <button 
+              onClick={() => { setMobileMenuOpen(false); resetTest(); setQuickTestOpen(true); }}
+              className="w-full text-left py-1 text-amber-400 font-bold flex items-center gap-1.5"
+            >
+              <Zap className="w-3.5 h-3.5" />
+              <span>{t.nav.quickTest}</span>
+            </button>
+            <a href="#leadership" onClick={() => setMobileMenuOpen(false)} className="block py-1 text-slate-200">
+              {t.nav.leadership}
+            </a>
+            <a href="#programs" onClick={() => setMobileMenuOpen(false)} className="block py-1 text-slate-200">
+              {t.nav.programs}
+            </a>
+            <a href="#cost-calculator" onClick={() => setMobileMenuOpen(false)} className="block py-1 text-slate-200">
+              {t.nav.calculator}
+            </a>
+            <button 
+              onClick={() => { setMobileMenuOpen(false); setScheduleModalOpen(true); }}
+              className="w-full text-left py-1 text-amber-300 font-semibold flex items-center gap-1.5"
+            >
+              <Calendar className="w-3.5 h-3.5 text-amber-400" />
+              <span>{t.nav.schedule} (ক্লাস রুটিন)</span>
+            </button>
+            <a href="#alumni-coe" onClick={() => setMobileMenuOpen(false)} className="block py-1 text-slate-200">
+              {t.nav.alumni}
+            </a>
+            <a href="#campuses" onClick={() => setMobileMenuOpen(false)} className="block py-1 text-slate-200">
+              {t.nav.campuses}
+            </a>
+            <button 
+              onClick={() => { setMobileMenuOpen(false); handleInstallPwa(); }}
+              className="w-full text-left py-1.5 text-amber-300 font-bold flex items-center gap-2 border-t border-indigo-950 pt-2"
+            >
+              <Smartphone className="w-3.5 h-3.5 text-amber-400" />
+              <span>{currentLang === 'jp' ? 'DILS公式アプリをスマホに導入 (PWA)' : currentLang === 'bn' ? 'মোবাইলে DILS অ্যাপ ইনস্টল করুন (PWA)' : 'Install DILS App on Phone (PWA)'}</span>
+            </button>
+            <div className="pt-2 flex flex-col gap-2">
               <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  setPartnerModalOpen(true);
-                }}
-                className="w-full py-3 bg-[#0E1B38] text-slate-100 font-bold text-xs rounded-xl border border-indigo-700/60 flex items-center justify-center gap-2 min-h-[44px]"
+                onClick={() => { setMobileMenuOpen(false); setPartnerModalOpen(true); }}
+                className="w-full py-2.5 bg-[#0E1B38] text-white rounded-lg border border-indigo-700 font-bold"
               >
-                <Building2 className="w-4 h-4 text-red-400" />
-                <span>{t.nav.partnerCta}</span>
+                {t.nav.inquire}
               </button>
-
               <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onSwitchToStudentPortal && onSwitchToStudentPortal('c-jp-n5');
-                }}
-                className="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-red-950/60 flex items-center justify-center gap-2 min-h-[44px]"
+                onClick={() => { setMobileMenuOpen(false); setFastAdmissionOpen(true); }}
+                className="w-full py-2.5 bg-red-600 text-white rounded-lg font-bold"
               >
-                <GraduationCap className="w-4 h-4" />
-                <span>{t.nav.studentLms}</span>
+                {t.nav.studentApp}
               </button>
             </div>
           </div>
@@ -621,146 +746,80 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
 
 
       {/* =========================================================================
-          3. HERO SECTION (The B2B Trust Hook & Futuristic Cultural Backdrop)
+          3. MINIMALIST HERO (Clean, High-Impact, Scannable)
          ========================================================================= */}
-      <section className="relative pt-12 pb-20 sm:pt-20 sm:pb-28 overflow-hidden">
+      <section className="relative pt-12 pb-16 sm:pt-20 sm:pb-24 overflow-hidden border-b border-indigo-950/70">
         
-        {/* Futuristic Cultural Background: Subtle Torii Gate & Mount Fuji Sunrise silhouette with AI digital grid lines */}
+        {/* Subtle Cyber Grid & Ambient Red Glow */}
         <div className="absolute inset-0 pointer-events-none select-none z-0">
-          
-          {/* Glowing Red Sun & Ambient Nebula */}
-          <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[600px] h-[350px] sm:w-[800px] sm:h-[450px] bg-red-600/10 rounded-full blur-[140px] pointer-events-none"></div>
-          <div className="absolute top-40 right-10 w-[400px] h-[400px] bg-indigo-600/10 rounded-full blur-[130px] pointer-events-none"></div>
-
-          {/* Cyber Digital Mesh Grid */}
+          <div className="absolute top-12 left-1/2 -translate-x-1/2 w-[550px] h-[300px] bg-red-600/10 rounded-full blur-[140px]"></div>
           <div 
-            className="absolute inset-0 opacity-[0.07]"
+            className="absolute inset-0 opacity-[0.05]"
             style={{
               backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)',
-              backgroundSize: '48px 48px'
+              backgroundSize: '40px 40px'
             }}
           ></div>
-
-          {/* Subtle Silhouette of Mount Fuji & Torii Gate (SVG Canvas) */}
-          <svg 
-            className="absolute bottom-0 left-0 right-0 w-full h-72 sm:h-96 text-[#0A132C]/60 opacity-70"
-            viewBox="0 0 1440 320" 
-            fill="currentColor"
-            preserveAspectRatio="none"
-          >
-            {/* Mountain Slope */}
-            <path d="M0,320L360,210L680,80L760,80L1080,220L1440,320L1440,320L0,320Z"></path>
-          </svg>
-
-          {/* Stylized Torii Silhouette Overlay */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-red-500/10 font-serif text-[180px] sm:text-[260px] font-black leading-none opacity-40">
-            ⛩️
-          </div>
-
-          {/* Japanese Calligraphy Watermark (誠: Sincerity / 信: Trust) */}
-          <div className="absolute top-20 right-6 sm:right-16 text-slate-800/20 font-serif text-8xl sm:text-9xl font-black select-none">
-            信誠
+          <div className="absolute top-16 right-10 text-slate-900/20 font-serif text-8xl font-black select-none pointer-events-none">
+            規律
           </div>
         </div>
 
-        {/* Hero Content Container */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 relative z-10 space-y-12">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 relative z-10 text-center space-y-7">
           
-          <div className="max-w-4xl space-y-6">
-            
-            {/* Japanese Institution Trust Tag */}
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-950/70 border border-red-500/40 text-red-400 text-xs font-mono font-bold tracking-wider uppercase shadow-inner"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>{t.hero.tag}</span>
-            </motion.div>
-
-            {/* B2B Primary Headline: Japanese first with English & Bangla Sub-headlines */}
-            <div className="space-y-3">
-              <motion.h1 
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.1 }}
-                className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.2] font-serif"
-              >
-                {t.hero.titleJp}
-              </motion.h1>
-
-              <div className="space-y-1">
-                <p className="text-base sm:text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-rose-300 to-amber-300">
-                  {t.hero.subtitleEn}
-                </p>
-                <p className="text-xs sm:text-sm text-slate-400 font-medium">
-                  {t.hero.subtitleBn}
-                </p>
-              </div>
-            </div>
-
-            {/* Sub-headline Paragraph */}
-            <motion.p 
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-3xl"
-            >
-              {t.hero.desc}
-            </motion.p>
-
-            {/* Action Buttons (CTAs) */}
-            <motion.div 
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="flex flex-wrap items-center gap-4 pt-2"
-            >
-              {/* Primary CTA: Become a Partner School */}
-              <button
-                onClick={() => setPartnerModalOpen(true)}
-                className="min-h-[48px] px-8 py-3.5 bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-sm rounded-xl shadow-xl shadow-red-950/60 transition-all duration-300 active:scale-95 flex items-center gap-2.5"
-              >
-                <Building2 className="w-4 h-4 text-white" />
-                <span>{t.hero.ctaPrimary}</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-
-              {/* Secondary CTA: Student Admissions */}
-              <button
-                onClick={() => onOpenAdmission && onOpenAdmission()}
-                className="min-h-[48px] px-6 py-3.5 bg-[#0E1B38]/90 hover:bg-[#152750] text-slate-100 font-bold text-sm rounded-xl border border-indigo-700/60 hover:border-red-500/60 transition-all duration-200 flex items-center gap-2"
-              >
-                <GraduationCap className="w-4 h-4 text-red-400" />
-                <span>{t.hero.ctaSecondary}</span>
-              </button>
-            </motion.div>
-
+          {/* Badge */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-950/60 border border-red-500/30 text-red-400 text-xs font-mono font-bold tracking-wide">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>{t.hero.badge}</span>
           </div>
 
-          {/* 4 Trust Metric Cards Grid (Apple-style clean frosted containers) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 pt-4">
-            {t.hero.stats.map((stat, idx) => (
+          {/* High-Impact Headline */}
+          <div className="space-y-3 max-w-4xl mx-auto">
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight font-serif">
+              {t.hero.titleJp}
+            </h1>
+            <p className="text-sm sm:text-base font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-rose-300 to-amber-300">
+              {t.hero.subtitle}
+            </p>
+          </div>
+
+          {/* Fast CTAs */}
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <button
+              onClick={() => setPartnerModalOpen(true)}
+              className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-red-950/60 transition-all flex items-center gap-2"
+            >
+              <Building2 className="w-4 h-4" />
+              <span>{t.hero.ctaPartner}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              onClick={() => setFastAdmissionOpen(true)}
+              className="px-5 py-3 bg-[#0E1B38] hover:bg-[#152750] text-slate-200 font-bold text-xs rounded-xl border border-indigo-700/60 transition-colors flex items-center gap-2"
+            >
+              <GraduationCap className="w-4 h-4 text-red-400" />
+              <span>{t.hero.ctaStudent}</span>
+            </button>
+
+            <button
+              onClick={() => { resetTest(); setQuickTestOpen(true); }}
+              className="px-4 py-3 bg-amber-950/40 hover:bg-amber-900/40 text-amber-300 font-bold text-xs rounded-xl border border-amber-600/40 transition-colors flex items-center gap-1.5"
+            >
+              <Zap className="w-4 h-4 text-amber-400" />
+              <span>Try 30s Nihomi Test</span>
+            </button>
+          </div>
+
+          {/* 4 Minimalist Metric Chips with Glassmorphism */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-4xl mx-auto pt-6">
+            {t.hero.chips.map((c, i) => (
               <div 
-                key={idx}
-                className="bg-[#0B1530]/60 backdrop-blur-md border border-indigo-900/50 hover:border-red-500/40 rounded-2xl p-5 shadow-lg transition-all duration-300 group hover:-translate-y-1"
+                key={i} 
+                className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-3.5 text-left shadow-[0_4px_20px_rgba(0,0,0,0.3)] hover:border-red-500/50 hover:shadow-[0_0_20px_rgba(239,68,68,0.15)] transition-all"
               >
-                <div className="text-2xl sm:text-3xl font-black text-white font-mono group-hover:text-red-400 transition-colors flex items-center gap-2">
-                  <span>{stat.val}</span>
-                  {idx === 0 && <ShieldCheck className="w-5 h-5 text-emerald-400" />}
-                  {idx === 1 && <Users className="w-5 h-5 text-amber-400" />}
-                  {idx === 2 && <Award className="w-5 h-5 text-red-400" />}
-                  {idx === 3 && <Brain className="w-5 h-5 text-indigo-400" />}
-                </div>
-                <div className="mt-2 space-y-0.5">
-                  <div className="text-xs font-bold text-slate-200">
-                    {currentLang === 'jp' ? stat.labelJp : currentLang === 'bn' ? stat.labelBn : stat.labelEn}
-                  </div>
-                  <div className="text-[11px] text-slate-400 font-mono">
-                    {currentLang === 'jp' ? stat.labelEn : stat.labelJp}
-                  </div>
-                </div>
+                <div className="text-sm font-black text-white font-mono">{c.label}</div>
+                <div className="text-[10px] text-slate-400 font-mono mt-0.5">{c.sub}</div>
               </div>
             ))}
           </div>
@@ -770,772 +829,951 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
 
 
       {/* =========================================================================
-          4. LEADERSHIP & TRUST (Razzak Sir's Japanese Faculty Section)
+          4. NIHOMI.COM EMBEDDED FEATURES (Interactive Voice & Simulation Display)
          ========================================================================= */}
-      <section id="leadership" className="py-20 bg-[#050A18] border-t border-b border-indigo-950 relative overflow-hidden">
-        
-        {/* Subtle Watermark */}
-        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-900/30 font-serif font-black text-[220px] pointer-events-none select-none">
-          師
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 relative z-10 space-y-12">
+      <section id="nihomi-features" className="py-16 sm:py-24 bg-[#050A18] border-b border-indigo-950 relative">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 space-y-10 relative z-10">
           
-          {/* Section Header */}
-          <div className="max-w-3xl space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-950/60 border border-red-800/80 text-red-400 text-xs font-mono font-bold uppercase tracking-wider">
-              <Award className="w-3.5 h-3.5 text-amber-400" />
-              <span>{t.leadership.eyebrow}</span>
-            </div>
-            
-            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-              {t.leadership.title}
-            </h2>
-
-            <p className="text-xs sm:text-sm text-slate-400">
-              Head of Japanese Department &amp; Managing Director • 12+ Years Direct Japan Specialization
-            </p>
-          </div>
-
-          {/* Highly Respectful Profile Card */}
-          <div className="bg-[#0B1530]/80 backdrop-blur-xl border border-indigo-900/70 rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden group hover:border-red-500/40 transition-all duration-300">
-            
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-              
-              {/* Left Column: Portrait & Official Japanese Seal (4 cols) */}
-              <div className="lg:col-span-4 flex flex-col items-center text-center space-y-4">
-                
-                <div className="relative">
-                  {/* Outer Glowing Ring */}
-                  <div className="w-44 h-44 sm:w-52 sm:h-52 rounded-3xl bg-gradient-to-tr from-red-600 via-rose-500 to-amber-500 p-1 shadow-[0_0_40px_rgba(220,38,38,0.3)]">
-                    <div className="w-full h-full rounded-[22px] bg-[#070D1E] flex flex-col items-center justify-center relative overflow-hidden border border-indigo-900">
-                      
-                      {/* Stylized Executive Portrait Crest */}
-                      <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-gradient-to-br from-red-700 via-rose-800 to-indigo-950 text-white font-black text-3xl sm:text-4xl flex items-center justify-center shadow-lg border border-red-500/30">
-                        AR
-                      </div>
-                      
-                      <div className="mt-2 text-center">
-                        <span className="text-xs font-mono font-bold text-white block">MD. ABDUR RAZZAK</span>
-                        <span className="text-[10px] text-amber-400 font-mono">DIRECTOR, DILS DHAKA</span>
-                      </div>
-
-                      {/* Authentic Japanese Red Stamp (落款印 Hanko) */}
-                      <div className="absolute top-3 right-3 w-8 h-8 rounded-md bg-red-600/90 text-white font-serif text-[11px] font-bold flex items-center justify-center border border-red-400 shadow-sm transform rotate-6">
-                        印
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Certified JLPT N1 Crest Pill */}
-                  <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-amber-500 to-red-600 text-slate-950 font-black text-[11px] font-mono rounded-full shadow-lg border border-amber-300 flex items-center gap-1.5 whitespace-nowrap">
-                    <ShieldCheck className="w-3.5 h-3.5 text-slate-950" />
-                    <span>JLPT N1 HIGHEST RANK</span>
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <h3 className="text-xl sm:text-2xl font-black text-white font-serif">
-                    {t.leadership.name}
-                  </h3>
-                  <p className="text-xs font-mono text-slate-300 mt-1">
-                    {t.leadership.role}
-                  </p>
-                  <p className="text-[11px] text-red-400 font-mono font-semibold mt-0.5">
-                    Authorized Japan Immigration Consultant • Farmgate HQ
-                  </p>
-                </div>
+          {/* Header */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-red-950 text-red-400 text-[11px] font-mono font-bold">
+                <Brain className="w-3 h-3 text-amber-400" />
+                <span>{t.nihomiSection.tag}</span>
               </div>
-
-              {/* Right Column: Quote & Trust Pillars (8 cols) */}
-              <div className="lg:col-span-8 space-y-6">
-                
-                {/* Formal Quote Box */}
-                <div className="bg-[#060B19] border border-indigo-900/80 rounded-2xl p-5 sm:p-7 relative shadow-inner">
-                  <span className="text-4xl text-red-500/30 font-serif absolute top-2 left-4 select-none">“</span>
-                  <blockquote className="text-sm sm:text-base text-slate-200 font-medium leading-relaxed pl-5 border-l-2 border-red-500/60 font-serif">
-                    {t.leadership.quote}
-                  </blockquote>
-                  <div className="text-right pt-2">
-                    <span className="text-xs font-mono text-slate-400">
-                      — <strong>Md. Abdur Razzak</strong>, Head of Japanese Department &amp; JLPT N1 Instructor
-                    </span>
-                  </div>
-                </div>
-
-                {/* 3 Core Trust Pillars */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {t.leadership.pillars.map((p, idx) => (
-                    <div 
-                      key={idx}
-                      className="bg-[#070E22] border border-indigo-950 rounded-xl p-4 space-y-1.5 hover:border-indigo-700 transition-colors"
-                    >
-                      <div className="text-red-400 font-bold text-xs flex items-center gap-1.5 font-mono">
-                        {idx === 0 && <Users className="w-3.5 h-3.5" />}
-                        {idx === 1 && <FileCheck className="w-3.5 h-3.5" />}
-                        {idx === 2 && <GraduationCap className="w-3.5 h-3.5" />}
-                        <span>PILLAR 0{idx + 1}</span>
-                      </div>
-                      <div className="text-xs font-bold text-white">
-                        {currentLang === 'jp' ? p.titleJp : currentLang === 'bn' ? p.titleBn : p.titleEn}
-                      </div>
-                      <div className="text-[11px] text-slate-400 leading-snug">
-                        {currentLang === 'jp' ? p.descJp : currentLang === 'bn' ? p.descBn : p.descEn}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Consultation Triggers */}
-                <div className="flex flex-wrap items-center gap-3 pt-1">
-                  <button
-                    onClick={() => setPartnerModalOpen(true)}
-                    className="min-h-[44px] px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-red-950/60 transition-transform active:scale-95 flex items-center gap-2"
-                  >
-                    <span>{currentLang === 'jp' ? 'ラザック先生とのオンライン協議予約' : 'Schedule Direct Meeting with Sensei Razzak'}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-
-                  <a
-                    href="https://wa.me/8801300634046"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="min-h-[44px] px-5 py-2.5 bg-[#081128] hover:bg-[#0E1C40] text-emerald-400 border border-indigo-900 rounded-xl text-xs font-bold transition-colors flex items-center gap-2"
-                  >
-                    <PhoneCall className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>WhatsApp Direct: +880 1300-634046</span>
-                  </a>
-                </div>
-
-              </div>
-
+              <h2 className="text-xl sm:text-3xl font-black text-white tracking-tight">
+                {t.nihomiSection.title}
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-400 max-w-xl">
+                {t.nihomiSection.subtitle}
+              </p>
             </div>
 
-          </div>
-
-        </div>
-      </section>
-
-
-      {/* =========================================================================
-          5. THE FUTURE OF LEARNING: OUR AI-POWERED ECOSYSTEM (DILS + Nihomi.com)
-             High-Tech Infrastructure Diagram & Predictive Student Analytics
-         ========================================================================= */}
-      <section id="ecosystem" className="py-20 sm:py-28 bg-[#070D1E] border-b border-indigo-950 relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 relative z-10 space-y-12 sm:space-y-16">
-          
-          {/* Section Heading */}
-          <div className="text-center max-w-3xl mx-auto space-y-3">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-red-950/70 border border-red-800/80 text-red-400 text-xs font-mono font-bold uppercase tracking-wider">
-              <Cpu className="w-3.5 h-3.5 text-amber-400" />
-              <span>{t.ecosystem.badge}</span>
-            </div>
-            
-            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-              {t.ecosystem.title}
-            </h2>
-            
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl mx-auto">
-              {t.ecosystem.desc}
-            </p>
-          </div>
-
-          {/* High-Tech Interactive Ecosystem Showcase Frame */}
-          <div className="bg-[#0A132C]/80 backdrop-blur-xl border border-indigo-900/80 rounded-3xl shadow-2xl overflow-hidden">
-            
-            {/* Top Frame Status Bar */}
-            <div className="bg-[#050916] border-b border-indigo-950 px-5 py-3.5 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-red-500/80"></span>
-                <span className="w-3 h-3 rounded-full bg-amber-500/80"></span>
-                <span className="w-3 h-3 rounded-full bg-emerald-500/80"></span>
-                <span className="text-xs font-mono text-slate-400 pl-2">
-                  infrastructure://dils.farmgate.dhaka ➔ nihomi.com/ai-sync-hub
-                </span>
-              </div>
-
-              <div className="hidden sm:flex items-center gap-2 text-[11px] font-mono text-emerald-400 bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-800/60">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>REAL-TIME LEARNER DATA SYNC</span>
-              </div>
-            </div>
-
-            {/* In-App Tab Selectors */}
-            <div className="bg-[#070E22]/90 border-b border-indigo-950 p-3 flex items-center gap-2 overflow-x-auto scrollbar-none">
+            <div className="flex items-center gap-2 self-start md:self-auto">
               <button
-                onClick={() => setActiveAITab('infrastructure')}
-                className={`min-h-[42px] px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
-                  activeAITab === 'infrastructure'
-                    ? 'bg-red-600 text-white shadow-md shadow-red-950/60'
-                    : 'text-slate-400 hover:text-white hover:bg-indigo-950/50'
-                }`}
+                onClick={() => { resetTest(); setQuickTestOpen(true); }}
+                className="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-bold shadow-md flex items-center gap-1.5"
               >
-                <Cpu className="w-4 h-4" />
-                <span>{t.ecosystem.tabs.infra}</span>
+                <Zap className="w-3.5 h-3.5" />
+                <span>Take 30s Live Quiz</span>
               </button>
-
-              <button
-                onClick={() => setActiveAITab('radar')}
-                className={`min-h-[42px] px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
-                  activeAITab === 'radar'
-                    ? 'bg-red-600 text-white shadow-md shadow-red-950/60'
-                    : 'text-slate-400 hover:text-white hover:bg-indigo-950/50'
-                }`}
-              >
-                <Target className="w-4 h-4" />
-                <span>{t.ecosystem.tabs.radar}</span>
-              </button>
-
-              <button
-                onClick={() => setActiveAITab('srs')}
-                className={`min-h-[42px] px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
-                  activeAITab === 'srs'
-                    ? 'bg-red-600 text-white shadow-md shadow-red-950/60'
-                    : 'text-slate-400 hover:text-white hover:bg-indigo-950/50'
-                }`}
-              >
-                <Brain className="w-4 h-4" />
-                <span>{t.ecosystem.tabs.srs}</span>
-              </button>
-            </div>
-
-            {/* Interactive Viewport Body */}
-            <div className="p-6 sm:p-10 min-h-[420px] flex flex-col justify-center bg-gradient-to-b from-[#0A132C]/40 to-[#060B19]">
-              
-              {/* TAB 1: High-Tech Infrastructure Map */}
-              {activeAITab === 'infrastructure' && (
-                <div className="space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 relative">
-                    
-                    {/* Step 1: DILS Farmgate Campus */}
-                    <div className="bg-[#070D1E] border border-indigo-900 rounded-2xl p-5 space-y-3 relative">
-                      <div className="w-10 h-10 rounded-xl bg-red-600/20 border border-red-500/40 text-red-400 flex items-center justify-center font-mono font-bold text-sm">
-                        01
-                      </div>
-                      <h4 className="text-sm font-bold text-white">
-                        {currentLang === 'jp' ? 'ファームゲート対面校' : currentLang === 'bn' ? 'ফার্মগেট ক্যাম্পাস ক্লাস' : 'In-Person Classroom'}
-                      </h4>
-                      <p className="text-xs text-slate-400 leading-relaxed">
-                        {currentLang === 'jp'
-                          ? 'JLPT N1認定講師による厳格な講義、発音矯正、お辞儀・生活マナー指導を実施。'
-                          : currentLang === 'bn'
-                          ? 'এন১ ইন্সট্রাক্টরের অধীনে সরাসরি ক্লাস, উচ্চারণ ড্রিল ও ওজিগি নিয়মানুবর্তিতা।'
-                          : 'Rigorous 150h in-person immersion, pronunciation labs, and strict attendance discipline.'}
-                      </p>
-                      <div className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800">
-                        Attendance: 98.4%
-                      </div>
-                    </div>
-
-                    {/* Step 2: Instant Cloud Sync Engine */}
-                    <div className="bg-[#070D1E] border border-indigo-900 rounded-2xl p-5 space-y-3 relative">
-                      <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/40 text-indigo-400 flex items-center justify-center font-mono font-bold text-sm">
-                        02
-                      </div>
-                      <h4 className="text-sm font-bold text-white">
-                        {currentLang === 'jp' ? 'Nihomi クラウド同期' : currentLang === 'bn' ? 'ক্লাউড ডেটা সিঙ্ক' : 'Nihomi Cloud Sync'}
-                      </h4>
-                      <p className="text-xs text-slate-400 leading-relaxed">
-                        {currentLang === 'jp'
-                          ? '毎回の出欠記録・小テスト採点・弱点文法データが学生のNihomi IDへ即時反映。'
-                          : currentLang === 'bn'
-                          ? 'ক্লাস টেস্ট ও হোমওয়ার্ক স্কোর সরাসরি নিহোমি কেন্দ্রীয় অ্যাকাউন্টে সিঙ্ক।'
-                          : 'Daily physical test grades and attendance stream into the student’s unified digital record.'}
-                      </p>
-                      <div className="text-[10px] font-mono text-indigo-400 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800">
-                        Sync Latency: &lt;1.2s
-                      </div>
-                    </div>
-
-                    {/* Step 3: 24/7 AI Retention Engine */}
-                    <div className="bg-[#070D1E] border border-indigo-900 rounded-2xl p-5 space-y-3 relative">
-                      <div className="w-10 h-10 rounded-xl bg-amber-600/20 border border-amber-500/40 text-amber-400 flex items-center justify-center font-mono font-bold text-sm">
-                        03
-                      </div>
-                      <h4 className="text-sm font-bold text-white">
-                        {currentLang === 'jp' ? '24/7 AI記憶定着エンジン' : currentLang === 'bn' ? '২৪/৭ এআই মেমোরি ইঞ্জিন' : '24/7 AI Retention'}
-                      </h4>
-                      <p className="text-xs text-slate-400 leading-relaxed">
-                        {currentLang === 'jp'
-                          ? 'エビングハウスの忘却曲線に基づき、復習が必要な単語・文法をスマホへ自動通知。'
-                          : currentLang === 'bn'
-                          ? 'ফরগেটিং কার্ভের উপর ভিত্তি করে রাতে স্মার্টফোনে অটোমেটিক রিকল প্র্যাকটিস।'
-                          : 'Spaced Repetition System (SRS) forces daily recall on smartphone for high retention.'}
-                      </p>
-                      <div className="text-[10px] font-mono text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-800">
-                        Retention Rate: 92.8%
-                      </div>
-                    </div>
-
-                    {/* Step 4: Japanese Partner School Verification */}
-                    <div className="bg-[#070D1E] border border-red-500/50 rounded-2xl p-5 space-y-3 relative shadow-lg shadow-red-950/40">
-                      <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center font-mono font-bold text-sm">
-                        04
-                      </div>
-                      <h4 className="text-sm font-bold text-white">
-                        {currentLang === 'jp' ? '提携校向け透明性レポート' : currentLang === 'bn' ? 'জাপান পার্টনার ড্যাশবোর্ড' : 'B2B Partner Verification'}
-                      </h4>
-                      <p className="text-xs text-slate-400 leading-relaxed">
-                        {currentLang === 'jp'
-                          ? '日本の受入機関は、渡日前の学生の学習進捗・出席率・JLPT合格予測を随時確認可能。'
-                          : currentLang === 'bn'
-                          ? 'জাপানের স্কুল কর্তৃপক্ষ সরাসরি শিক্ষার্থীর প্রস্তুতি ও উপস্থিতির রেকর্ড পর্যবেক্ষণ করতে পারে।'
-                          : 'Japanese partner schools can inspect student performance logs before issuing admission.'}
-                      </p>
-                      <div className="text-[10px] font-mono text-red-400 bg-red-950/80 px-2 py-0.5 rounded border border-red-800">
-                        COE Success: 100%
-                      </div>
-                    </div>
-
-                  </div>
-
-                  <div className="bg-[#050916] border border-indigo-950 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
-                    <div className="text-slate-300">
-                      <strong className="text-white">Core Principle:</strong> One Student ➔ One DILS ID ➔ One Continuous Learning Journey (Classroom + Cloud AI).
-                    </div>
-                    <button
-                      onClick={() => setPartnerModalOpen(true)}
-                      className="px-4 py-2 bg-indigo-900/60 hover:bg-indigo-800 text-white rounded-lg border border-indigo-700 font-bold transition-colors whitespace-nowrap"
-                    >
-                      {currentLang === 'jp' ? '学校様向けデータ連携の相談' : 'Request Institutional Demo'}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 2: Real-time Weakness Radar */}
-              {activeAITab === 'radar' && (
-                <div className="space-y-6">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                    <div>
-                      <h4 className="text-sm sm:text-base font-bold text-white">
-                        {currentLang === 'jp' ? '学生学習進捗 & 合格予測レーダー (JLPT N5・NAT-TEST 5級)' : 'Student JLPT Competency Radar'}
-                      </h4>
-                      <p className="text-xs text-slate-400">
-                        Aggregated from 150 hours of physical class quizzes and Nihomi AI drills.
-                      </p>
-                    </div>
-                    <span className="px-3 py-1 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 text-xs font-mono font-bold">
-                      EXAM READINESS: 94.2% READY
-                    </span>
-                  </div>
-
-                  {/* Progress Breakdown Bars */}
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex justify-between text-xs font-mono text-slate-300 mb-1.5">
-                        <span>Kanji &amp; Vocabulary (文字・語彙 Goi)</span>
-                        <span className="text-emerald-400 font-bold">96% (Mastered: 110 Kanji, 800 Words)</span>
-                      </div>
-                      <div className="w-full h-2.5 rounded-full bg-[#050916] overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full" style={{ width: '96%' }}></div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between text-xs font-mono text-slate-300 mb-1.5">
-                        <span>Grammar &amp; Particles (文法・助詞 Bunpou: は/が, に/で)</span>
-                        <span className="text-amber-400 font-bold">89% (Active Recall Reinforcement)</span>
-                      </div>
-                      <div className="w-full h-2.5 rounded-full bg-[#050916] overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full" style={{ width: '89%' }}></div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between text-xs font-mono text-slate-300 mb-1.5">
-                        <span>Acoustic Listening (聴解 Chokai - Native Speed Drills)</span>
-                        <span className="text-emerald-400 font-bold">93% (Passed Benchmark)</span>
-                      </div>
-                      <div className="w-full h-2.5 rounded-full bg-[#050916] overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-indigo-500 to-cyan-400 rounded-full" style={{ width: '93%' }}></div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between text-xs font-mono text-slate-300 mb-1.5">
-                        <span>Business Manners &amp; Ojigi (お辞儀・報連相・挨拶)</span>
-                        <span className="text-red-400 font-bold">100% Certified by Razzak Sir</span>
-                      </div>
-                      <div className="w-full h-2.5 rounded-full bg-[#050916] overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-red-600 to-rose-400 rounded-full" style={{ width: '100%' }}></div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-[#060B19] border border-indigo-950 rounded-xl p-4 text-xs text-slate-300 flex items-center justify-between">
-                    <span>
-                      <strong className="text-amber-300">Data-Driven Assurance:</strong> Japanese partners receive transparent digital scorecards ensuring zero surprises upon student landing in Japan.
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 3: SRS Retention Curve */}
-              {activeAITab === 'srs' && (
-                <div className="space-y-6">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h4 className="text-sm sm:text-base font-bold text-white">
-                        {currentLang === 'jp' ? 'エビングハウスの忘却曲線を克服する「Nihomi SRS」' : 'Ebbinghaus Forgetting Curve Defeat'}
-                      </h4>
-                      <p className="text-xs text-slate-400">
-                        Comparing traditional passive rote learning vs. DILS + Nihomi continuous spaced repetition.
-                      </p>
-                    </div>
-                    <span className="text-xs font-mono text-red-400 bg-red-950/80 px-2.5 py-1 rounded border border-red-800">
-                      SRS RETENTION: +68% GAIN
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="bg-[#050916] border border-red-950/80 rounded-xl p-4 space-y-2">
-                      <div className="text-red-400 font-mono font-bold text-xs">
-                        ❌ Traditional Rote Cramming (一般的な丸暗記)
-                      </div>
-                      <div className="text-2xl font-black text-slate-400 font-mono">
-                        21% Retention
-                      </div>
-                      <p className="text-xs text-slate-400 leading-relaxed">
-                        Students forget 79% of Kanji and grammar within 30 days of lecture without spaced recall.
-                      </p>
-                    </div>
-
-                    <div className="bg-[#050916] border border-emerald-500/40 rounded-xl p-4 space-y-2 shadow-lg">
-                      <div className="text-emerald-400 font-mono font-bold text-xs">
-                        ✅ DILS Classroom + Nihomi AI (ハイブリッド学習)
-                      </div>
-                      <div className="text-2xl font-black text-emerald-400 font-mono">
-                        89% Retention
-                      </div>
-                      <p className="text-xs text-slate-300 leading-relaxed">
-                        Continuous active recall intervals (1d ➔ 3d ➔ 7d ➔ 21d) lock vocabulary into long-term memory.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-            </div>
-
-            {/* Bottom Callout Bar */}
-            <div className="bg-[#050A18] border-t border-indigo-950 p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="space-y-0.5 text-center sm:text-left">
-                <div className="text-xs font-mono font-bold text-red-400 uppercase tracking-wider">
-                  CONTINUOUS DATA-DRIVEN JAPAN READINESS
-                </div>
-                <div className="text-xs text-slate-400">
-                  Built specifically for Bangladeshi candidates preparing for Japanese institutions.
-                </div>
-              </div>
 
               <button
                 onClick={() => onSwitchToStudentPortal && onSwitchToStudentPortal('c-jp-n5')}
-                className="min-h-[44px] px-6 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-red-950/60 transition-transform active:scale-95 flex items-center gap-2"
+                className="px-3.5 py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white rounded-lg text-xs font-bold shadow-md shadow-red-950/60 flex items-center gap-1.5"
               >
-                <span>Launch Student Practice Hub</span>
-                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Launch LMS</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
-
           </div>
 
-        </div>
-      </section>
-
-
-      {/* =========================================================================
-          6. SERVICES & EXPERTISE (Clean MUJI-Style Grid)
-             1. JLPT & NAT-TEST
-             2. Specified Skilled Worker (SSW)
-             3. COE & Visa Processing (100% Legal Compliance)
-             4. Business Etiquette & Ojigi (Bowing) Training
-         ========================================================================= */}
-      <section id="services" className="py-20 sm:py-28 bg-[#050A18] border-b border-indigo-950 relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 relative z-10 space-y-12 sm:space-y-16">
-          
-          {/* Section Heading */}
-          <div className="text-center max-w-3xl mx-auto space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-950/70 border border-red-800/80 text-red-400 text-xs font-mono font-bold uppercase tracking-wider">
-              <Briefcase className="w-3.5 h-3.5" />
-              <span>{t.services.badge}</span>
+          {/* Interactive Feature Tabs + Live Preview Window with Glassmorphism */}
+          <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-3xl overflow-hidden shadow-2xl">
+            
+            {/* Top Bar */}
+            <div className="bg-slate-950/70 border-b border-slate-800/80 px-4 py-2.5 flex items-center justify-between text-xs font-mono">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <span className="text-slate-400 pl-2">nihomi.com/engine • DILS Integrated AI</span>
+              </div>
+              <span className="text-emerald-400 font-bold text-[10px]">AI ENGINE CONNECTED</span>
             </div>
-            
-            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-              {t.services.title}
-            </h2>
-            
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl mx-auto">
-              {t.services.desc}
-            </p>
-          </div>
 
-          {/* Clean Minimalist 4-Card MUJI-Style Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
-            {t.services.items.map((svc, idx) => (
-              <div
-                key={idx}
-                className="bg-[#0B1530]/50 backdrop-blur-md border border-indigo-900/60 hover:border-red-500/50 rounded-3xl p-7 sm:p-9 flex flex-col justify-between shadow-xl transition-all duration-300 group hover:-translate-y-1"
-              >
-                <div className="space-y-5">
-                  
-                  {/* Card Header: Number & Badge */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-3xl sm:text-4xl font-black font-mono text-red-500/60 group-hover:text-red-400 transition-colors">
-                      {svc.num}
-                    </span>
-                    <span className="px-3 py-1 rounded-full bg-[#050916] border border-indigo-900 text-slate-300 text-[11px] font-mono">
-                      JAPAN STANDARD
-                    </span>
-                  </div>
-
-                  {/* Title & Subtitle */}
-                  <div className="space-y-1">
-                    <h3 className="text-xl sm:text-2xl font-black text-white group-hover:text-red-400 transition-colors">
-                      {currentLang === 'jp' ? svc.titleJp : currentLang === 'bn' ? svc.titleBn : svc.titleEn}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-slate-400 font-medium">
-                      {currentLang === 'jp' ? svc.subtitleJp : currentLang === 'bn' ? svc.subtitleBn : svc.subtitleEn}
-                    </p>
-                  </div>
-
-                  {/* Bullet Points */}
-                  <ul className="space-y-2.5 pt-2 text-xs sm:text-sm text-slate-300">
-                    {svc.features.map((feat, fIdx) => (
-                      <li key={fIdx} className="flex items-start gap-2.5">
-                        <CheckCircle2 className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-                        <span>{feat}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                </div>
-
-                {/* Bottom Card Action */}
-                <div className="pt-6 mt-6 border-t border-indigo-950 flex items-center justify-between">
-                  <span className="text-[11px] font-mono text-slate-400">
-                    Dhaka Farmgate &amp; Tokyo Curriculum
-                  </span>
+            {/* Feature Selectors Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 border-b border-slate-800/80 bg-slate-950/40">
+              {t.nihomiSection.features.map((feat) => {
+                const IconComponent = feat.icon;
+                const isActive = activeNihomiFeature === feat.id;
+                return (
                   <button
-                    onClick={() => setPartnerModalOpen(true)}
-                    className="text-xs font-bold text-red-400 hover:text-red-300 flex items-center gap-1.5 transition-colors"
+                    key={feat.id}
+                    onClick={() => setActiveNihomiFeature(feat.id as any)}
+                    className={`p-3.5 text-left border-r border-slate-800/80 transition-all ${
+                      isActive 
+                        ? 'bg-red-600/20 border-b-2 border-b-red-500 text-white' 
+                        : 'text-slate-400 hover:bg-slate-900/60 hover:text-slate-200'
+                    }`}
                   >
-                    <span>{currentLang === 'jp' ? '詳細シラバス請求' : 'Request Syllabus'}</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
+                    <div className="flex items-center gap-1.5 text-[10px] font-mono text-red-400 font-bold mb-1">
+                      <IconComponent className="w-3.5 h-3.5" />
+                      <span>{feat.badge}</span>
+                    </div>
+                    <div className="text-xs font-bold text-white line-clamp-1">
+                      {currentLang === 'jp' ? feat.nameJp : currentLang === 'bn' ? feat.nameBn : feat.nameEn}
+                    </div>
                   </button>
-                </div>
-
-              </div>
-            ))}
-          </div>
-
-        </div>
-      </section>
-
-
-      {/* =========================================================================
-          7. OUR PARTNERS IN JAPAN & 4-STEP RECRUITMENT FLOW
-         ========================================================================= */}
-      <section id="partners" className="py-20 bg-[#070D1E] border-b border-indigo-950 relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 relative z-10 space-y-12 sm:space-y-16">
-          
-          {/* Section Heading */}
-          <div className="text-center max-w-3xl mx-auto space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-950/70 border border-red-800/80 text-red-400 text-xs font-mono font-bold uppercase tracking-wider">
-              <Building2 className="w-3.5 h-3.5 text-amber-400" />
-              <span>{t.partnersSection.badge}</span>
+                );
+              })}
             </div>
-            
-            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-              {t.partnersSection.title}
-            </h2>
-            
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl mx-auto">
-              {t.partnersSection.desc}
-            </p>
-          </div>
 
-          {/* 4-Step Partnership Flow */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {t.partnersSection.steps.map((step, idx) => (
-              <div
-                key={idx}
-                className="bg-[#0B1530]/50 border border-indigo-900/60 rounded-2xl p-6 space-y-3 hover:border-red-500/40 transition-all group"
-              >
-                <div className="text-xs font-mono font-bold text-red-400 bg-red-950/60 px-2.5 py-1 rounded-md border border-red-800/60 inline-block">
-                  {step.step}
-                </div>
-                <h4 className="text-base font-bold text-white group-hover:text-red-400 transition-colors">
-                  {currentLang === 'jp' ? step.titleJp : currentLang === 'bn' ? step.titleBn : step.titleEn}
-                </h4>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  {step.descJp}
-                </p>
-              </div>
-            ))}
-          </div>
+            {/* Feature Interactive Showcase Body */}
+            <div className="p-6 sm:p-8 bg-slate-950/40 min-h-[300px] flex flex-col justify-center">
+              
+              {/* Feature 1: AI Sensei Voice / Chat Simulation with Live Sound */}
+              {activeNihomiFeature === 'sensei' && (
+                <div className="space-y-4 max-w-2xl mx-auto w-full">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-white flex items-center gap-1.5">
+                      <Brain className="w-4 h-4 text-red-400" />
+                      <span>AI Sensei Dialogue &amp; Speech Feedback</span>
+                    </span>
+                    <button
+                      onClick={() => setAiChatIndex((prev) => (prev + 1) % dialogueSamples.length)}
+                      className="text-[11px] text-red-400 hover:underline flex items-center gap-1"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>Next Dialogue Demo</span>
+                    </button>
+                  </div>
 
-          {/* Institutional Consultation CTA Banner */}
-          <div className="bg-gradient-to-r from-red-950/90 via-[#0E1E45] to-[#0A132C] border border-red-500/40 rounded-3xl p-8 sm:p-12 text-center max-w-4xl mx-auto space-y-6 shadow-2xl">
-            <h3 className="text-2xl sm:text-3xl font-black text-white font-serif">
-              {currentLang === 'jp'
-                ? '新規提携校・受入企業様を随時募集しております'
-                : 'Partner with DILS Dhaka for Disciplined Japanese Talent'}
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl mx-auto leading-relaxed">
-              {currentLang === 'jp'
-                ? '東京窓口またはダッカ現地とのZoomオンライン面談にて、詳細なカリキュラムや学生プロファイルをご案内いたします。'
-                : 'Schedule a Zoom conference with our Tokyo liaison or Dhaka headquarters to review student records and tailored pre-departure batches.'}
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-4">
-              <button
-                onClick={() => setPartnerModalOpen(true)}
-                className="min-h-[44px] px-8 py-3 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-red-950/60 transition-transform active:scale-95 flex items-center gap-2"
-              >
-                <Mail className="w-4 h-4" />
-                <span>{currentLang === 'jp' ? '提携校・受入のご相談はこちら' : 'Schedule Partner Consultation'}</span>
-              </button>
+                  {/* Chat bubbles */}
+                  <div className="space-y-3">
+                    <div className="bg-[#0B1530] border border-indigo-900 rounded-xl p-3 text-xs flex items-start gap-2.5">
+                      <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] font-bold">
+                        YOU
+                      </div>
+                      <div className="space-y-1 flex-1">
+                        <div className="font-medium text-white flex items-center justify-between">
+                          <span>{dialogueSamples[aiChatIndex].student}</span>
+                          <button
+                            onClick={() => playPronunciation(dialogueSamples[aiChatIndex].audioWord, 'ja-JP')}
+                            className="p-1 text-slate-400 hover:text-amber-400 rounded transition-colors"
+                            title="Hear Audio"
+                          >
+                            <Volume2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-mono">Bangla-Speaker Student Input</div>
+                      </div>
+                    </div>
 
-              <a
-                href="mailto:tokyo@dilsbd.com"
-                className="min-h-[44px] px-6 py-3 bg-[#070D1E] hover:bg-[#0B1530] text-slate-200 border border-indigo-800 rounded-xl text-xs font-bold transition-colors flex items-center gap-2"
-              >
-                <Mail className="w-4 h-4 text-red-400" />
-                <span>tokyo@dilsbd.com</span>
-              </a>
-            </div>
-          </div>
+                    <div className="bg-red-950/30 border border-red-800/60 rounded-xl p-3 text-xs flex items-start gap-2.5">
+                      <div className="w-7 h-7 rounded-full bg-red-600 flex items-center justify-center text-[10px] font-bold text-white">
+                        AI
+                      </div>
+                      <div className="space-y-1 flex-1">
+                        <div className="font-medium text-amber-300">{dialogueSamples[aiChatIndex].sensei}</div>
+                        <div className="text-[10px] text-emerald-400 font-mono font-bold">
+                          ✓ {dialogueSamples[aiChatIndex].accuracy}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
 
-        </div>
-      </section>
-
-
-      {/* =========================================================================
-          8. CORPORATE FOOTER (Tokyo & Dhaka Representation, Trust Badges, Copyright)
-         ========================================================================= */}
-      <footer id="about-us" className="bg-[#030712] border-t border-indigo-950 text-slate-400 text-xs pt-16 pb-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 space-y-12">
-          
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 sm:gap-12">
-            
-            {/* Column 1: Brand & Ethos (5 cols) */}
-            <div className="md:col-span-5 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 to-indigo-950 flex items-center justify-center font-serif font-black text-white text-lg">
-                  DILS
-                </div>
-                <div>
-                  <h4 className="text-base font-black text-white tracking-tight">
-                    {t.footer.title}
-                  </h4>
-                  <p className="text-[11px] text-slate-400">
-                    {t.footer.sub}
+                  <p className="text-xs text-slate-400 pt-1">
+                    {t.nihomiSection.features[0].summary}
                   </p>
                 </div>
+              )}
+
+              {/* Feature 2: Spaced Repetition Flashcards */}
+              {activeNihomiFeature === 'srs' && (
+                <div className="space-y-4 max-w-xl mx-auto w-full text-center">
+                  <div className="bg-[#091228] border border-indigo-800 rounded-2xl p-6 shadow-inner space-y-3">
+                    <div className="text-[10px] font-mono text-red-400 uppercase tracking-wider">
+                      SRS FLASHCARD • JLPT N5 GOI
+                    </div>
+                    <div className="text-4xl font-black text-white font-serif tracking-widest flex items-center justify-center gap-3">
+                      <span>学生 (がくせい)</span>
+                      <button
+                        onClick={() => playPronunciation('がくせい', 'ja-JP')}
+                        className="p-1.5 text-slate-400 hover:text-amber-400 bg-indigo-950 rounded-full"
+                        title="Hear Audio"
+                      >
+                        <Volume2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="text-sm font-semibold text-slate-300">
+                      Meaning: Student (ছাত্র / ছাত্রী)
+                    </div>
+                    <div className="text-xs text-emerald-400 font-mono font-bold">
+                      Optimal Recall Scheduled in: 3 days (Memory Strength: 92%)
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    {t.nihomiSection.features[1].summary}
+                  </p>
+                </div>
+              )}
+
+              {/* Feature 3: Mistake Radar */}
+              {activeNihomiFeature === 'radar' && (
+                <div className="space-y-3 max-w-xl mx-auto w-full">
+                  <div className="text-xs font-bold text-white flex justify-between">
+                    <span>Weakness Diagnosis Radar</span>
+                    <span className="text-red-400 font-mono text-[11px]">Auto-Targeting Failed Items</span>
+                  </div>
+
+                  <div className="space-y-2 text-xs">
+                    <div>
+                      <div className="flex justify-between text-slate-300 text-[11px] mb-1">
+                        <span>Particles 「は」 vs 「が」</span>
+                        <span className="text-emerald-400 font-mono">94% Mastered</span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-[#050916]">
+                        <div className="h-full bg-emerald-500 rounded-full" style={{ width: '94%' }}></div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-slate-300 text-[11px] mb-1">
+                        <span>Te-form Conjunction (〜てから / 〜てはいけません)</span>
+                        <span className="text-amber-400 font-mono">88% (Practicing)</span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-[#050916]">
+                        <div className="h-full bg-amber-500 rounded-full" style={{ width: '88%' }}></div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-slate-300 text-[11px] mb-1">
+                        <span>Acoustic Listening (Direction &amp; Clock Traps)</span>
+                        <span className="text-indigo-400 font-mono">91% Accuracy</span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-[#050916]">
+                        <div className="h-full bg-indigo-500 rounded-full" style={{ width: '91%' }}></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-slate-400 pt-2 text-center">
+                    {t.nihomiSection.features[2].summary}
+                  </p>
+                </div>
+              )}
+
+              {/* Feature 4: JLPT CBT Mock Simulator */}
+              {activeNihomiFeature === 'mock' && (
+                <div className="space-y-4 max-w-xl mx-auto w-full text-center">
+                  <div className="bg-[#070D1E] border border-indigo-900 rounded-xl p-5 space-y-2">
+                    <div className="text-xs font-mono text-emerald-400 font-bold">
+                      JLPT N5 MOCK EXAM SIMULATOR
+                    </div>
+                    <div className="text-3xl font-black text-white font-mono">
+                      Score: 168 / 180 (93.3%)
+                    </div>
+                    <div className="inline-block px-3 py-1 bg-emerald-950 text-emerald-400 border border-emerald-800 rounded text-xs font-bold font-mono">
+                      PREDICTED RESULT: PASS (AA)
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    {t.nihomiSection.features[3].summary}
+                  </p>
+                </div>
+              )}
+
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+
+      {/* =========================================================================
+          4.5 NIHOMI LEARNING ANALYTICS (Real-Time Student Progress Telemetry)
+         ========================================================================= */}
+      <NihomiLearningAnalytics
+        lang={currentLang}
+        onOpenAdmission={() => setFastAdmissionOpen(true)}
+        onSwitchToStudentPortal={onSwitchToStudentPortal}
+      />
+
+
+      {/* =========================================================================
+          5. ACADEMIC LEADERSHIP & TRUST (Razzak Sir: Crisp, High-Trust)
+         ========================================================================= */}
+      <section id="leadership" className="py-16 sm:py-20 bg-[#070D1E] border-b border-indigo-950">
+        <div className="max-w-5xl mx-auto px-4 sm:px-8 space-y-8">
+          
+          <div className="text-center space-y-1">
+            <span className="text-red-400 font-mono text-xs font-bold uppercase tracking-wider">
+              {t.leadership.tag}
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              {t.leadership.title}
+            </h2>
+          </div>
+
+          <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row items-center gap-6 shadow-2xl hover:border-slate-700/80 transition-all">
+            
+            {/* Portrait Crest */}
+            <div className="flex-shrink-0 text-center space-y-2">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-gradient-to-tr from-red-600 to-indigo-950 border-2 border-red-500/40 flex items-center justify-center text-white font-black text-3xl shadow-lg relative mx-auto">
+                AR
+                <span className="absolute -top-1 -right-1 w-6 h-6 rounded bg-red-600 text-white font-serif text-[10px] font-bold flex items-center justify-center border border-red-400">
+                  印
+                </span>
+              </div>
+              <div className="px-2 py-0.5 bg-amber-500 text-slate-950 font-black text-[10px] font-mono rounded">
+                JLPT N1 HIGHEST
+              </div>
+            </div>
+
+            {/* Profile Info & 1-line Quote */}
+            <div className="space-y-3 flex-1 text-center md:text-left">
+              <div>
+                <h3 className="text-lg sm:text-xl font-black text-white font-serif">
+                  {t.leadership.name}
+                </h3>
+                <p className="text-xs text-slate-400 font-mono">
+                  {t.leadership.role}
+                </p>
               </div>
 
-              <p className="text-xs text-slate-400 leading-relaxed max-w-md">
-                Strictly dedicated to Japanese language, cultural discipline, and immigration compliance. Bridging Bangladeshi talent with Japanese corporate standards through physical masterclasses and continuous AI memory tracking.
-              </p>
+              <blockquote className="text-xs sm:text-sm text-slate-200 font-medium italic border-l-2 border-red-500/80 pl-3">
+                {t.leadership.quote}
+              </blockquote>
 
-              {/* Trust Badges */}
-              <div className="space-y-1.5 pt-2">
-                {t.footer.trustBadges.map((badge, bIdx) => (
-                  <div key={bIdx} className="flex items-center gap-2 text-[11px] text-slate-300">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-                    <span>{badge}</span>
+              {/* 3 Crisp Badges with Glassmorphism */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                {t.leadership.badges.map((b, i) => (
+                  <div key={i} className="bg-slate-950/60 backdrop-blur-sm border border-slate-800/80 rounded-xl p-2.5 text-xs shadow-sm">
+                    <div className="font-bold text-white text-[11px]">{b.title}</div>
+                    <div className="text-[10px] text-slate-400">{b.desc}</div>
                   </div>
+                ))}
+              </div>
+
+              {/* Instant WhatsApp direct consult button */}
+              <div className="pt-2">
+                <a
+                  href="https://wa.me/8801300634046?text=Hello%20Sensei%20Razzak,%20I%20would%20like%20to%20consult%20about%20Japan%20Language%20Course%20and%20Visa%20at%20DILS."
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600/20 border border-emerald-500/50 hover:bg-emerald-600/30 text-emerald-300 rounded-lg text-xs font-bold transition-colors"
+                >
+                  <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Direct WhatsApp with Sensei Razzak: +880 1300-634046</span>
+                </a>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+
+      {/* =========================================================================
+          6. CORE PROGRAMS (Fast 1-Click Enrollment)
+         ========================================================================= */}
+      <section id="programs" className="py-16 sm:py-20 bg-[#050A18] border-b border-indigo-950">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 space-y-8">
+          
+          <div className="text-center space-y-1">
+            <span className="text-red-400 font-mono text-xs font-bold uppercase tracking-wider">
+              {t.programs.tag}
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              {t.programs.title}
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {t.programs.items.map((p, idx) => (
+              <div
+                key={idx}
+                className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-5 space-y-3 flex flex-col justify-between shadow-xl hover:border-red-500/50 hover:shadow-[0_0_25px_rgba(239,68,68,0.15)] transition-all"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xl font-black font-mono text-red-500/70">{p.num}</span>
+                    <span className="text-[11px] font-mono font-bold text-amber-400 bg-amber-950/40 px-2 py-0.5 rounded border border-amber-800/40">
+                      {p.fee}
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-bold text-white">{p.name}</h4>
+                  <p className="text-xs text-slate-400 leading-snug">{p.desc}</p>
+                </div>
+
+                <div className="space-y-3 pt-2 border-t border-slate-800/80">
+                  <div className="flex flex-wrap gap-1">
+                    {p.pills.map((pill, pi) => (
+                      <span key={pi} className="text-[10px] font-mono bg-slate-950/60 border border-slate-800/60 px-2 py-0.5 rounded text-slate-300">
+                        {pill}
+                      </span>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setSelectedCourseId(p.id);
+                      setFastAdmissionOpen(true);
+                    }}
+                    className="w-full py-2 bg-red-600/90 hover:bg-red-500 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <span>Enroll Now</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+        </div>
+      </section>
+
+
+      {/* =========================================================================
+          6.2 5-STEP STUDENT JOURNEY ROADMAP (Swipeable Carousel with Snap-X)
+         ========================================================================= */}
+      <section id="student-journey" className="py-16 sm:py-24 bg-[#030712] border-b border-indigo-950/80 relative">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8">
+          <StudentJourney
+            lang={currentLang}
+            onOpenAdmission={() => setFastAdmissionOpen(true)}
+            onOpenValidator={(certId) => onOpenValidator && onOpenValidator(certId)}
+          />
+        </div>
+      </section>
+
+
+      {/* =========================================================================
+          6.5 TRANSPARENT TUITION & VISA COST CALCULATOR (Zero Hidden Costs)
+         ========================================================================= */}
+      <section id="cost-calculator" className="py-16 sm:py-20 bg-[#060B1A] border-b border-indigo-950">
+        <div className="max-w-5xl mx-auto px-4 sm:px-8 space-y-8">
+          
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div className="space-y-1">
+              <span className="text-red-400 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+                <Calculator className="w-3.5 h-3.5" />
+                <span>{t.calculator.tag}</span>
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                {t.calculator.title}
+              </h2>
+              <p className="text-xs text-slate-400">
+                {t.calculator.subtitle}
+              </p>
+            </div>
+
+            <button
+              onClick={() => setScheduleModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-950/70 border border-indigo-800 text-amber-300 text-xs font-bold rounded-lg hover:bg-indigo-900 transition-colors self-start md:self-auto"
+            >
+              <Calendar className="w-3.5 h-3.5 text-amber-400" />
+              <span>{currentLang === 'jp' ? '週間時間割を見る' : 'View Class Timetable & Routine'}</span>
+            </button>
+          </div>
+
+          {/* Calculator Card with Glassmorphism */}
+          <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl hover:border-slate-700/80 transition-all">
+            
+            {/* Step 1: Select Target Goal */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">
+                1. Select Course Target (কোর্স লক্ষ্য নির্বাচন করুন)
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                {[
+                  { id: 'n5', name: 'JLPT N5 Foundation', hours: '150 Hours', fee: 12000, courseCode: 'c-jp-n5' },
+                  { id: 'n4', name: 'JLPT N4 Intermediate', hours: '160 Hours', fee: 14000, courseCode: 'c-jp-n4' },
+                  { id: 'ssw', name: 'SSW Tokutei Ginou', hours: '180 Hours', fee: 15000, courseCode: 'c-jp-ssw' },
+                  { id: 'combo', name: 'N5+N4 Complete Pack', hours: '310 Hours (Save ৳4,000)', fee: 22000, courseCode: 'c-jp-n5' }
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setCalcCourse(item.id as any);
+                      setSelectedCourseId(item.courseCode);
+                    }}
+                    className={`p-3 rounded-2xl border text-left transition-all ${
+                      calcCourse === item.id
+                        ? 'bg-red-600/20 border-red-500 text-white shadow-md'
+                        : 'bg-slate-950/60 backdrop-blur-sm border-slate-800/80 text-slate-300 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="text-xs font-bold">{item.name}</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">{item.hours}</div>
+                    <div className="text-xs font-mono font-bold text-amber-400 mt-1">৳{item.fee.toLocaleString()}</div>
+                  </button>
                 ))}
               </div>
             </div>
 
-            {/* Column 2: Dual Office Locations (Tokyo & Dhaka) (4 cols) */}
-            <div className="md:col-span-4 space-y-4">
-              <h5 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                OFFICES &amp; CAMPUSES
-              </h5>
-
-              {/* Tokyo Desk */}
-              <div className="space-y-1 border-l-2 border-red-500/80 pl-3">
-                <div className="text-white font-bold text-xs flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-red-400" />
-                  <span>{t.footer.tokyoOffice}</span>
+            {/* Step 2: Intake & Add-ons */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-800/80">
+              
+              {/* Intake */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">
+                  2. Targeted Japan Intake (ইনটেক)
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['April 2027', 'October 2027', 'July 2027'].map((intake) => (
+                    <button
+                      key={intake}
+                      onClick={() => setCalcIntake(intake as any)}
+                      className={`p-2 rounded-xl border text-center text-xs font-bold transition-all ${
+                        calcIntake === intake
+                          ? 'bg-indigo-600 text-white border-indigo-400 shadow-sm'
+                          : 'bg-slate-950/60 backdrop-blur-sm text-slate-400 border-slate-800/80 hover:text-slate-200'
+                      }`}
+                    >
+                      {intake}
+                    </button>
+                  ))}
                 </div>
-                <p className="text-[11px] text-slate-400 leading-snug">
-                  {t.footer.tokyoAddress}
-                </p>
-                <div className="text-[11px] font-mono text-red-400 pt-0.5">
-                  Email: tokyo@dilsbd.com
+              </div>
+
+              {/* Add-ons checkboxes */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">
+                  3. Transparent Materials &amp; Registration
+                </label>
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-2 p-2 bg-slate-950/60 backdrop-blur-sm rounded-xl border border-slate-800/80 text-xs cursor-pointer hover:border-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={includeBooks}
+                      onChange={(e) => setIncludeBooks(e.target.checked)}
+                      className="accent-red-600 rounded"
+                    />
+                    <span className="text-slate-200">Original Japanese Textbooks Pack (Minna no Nihongo)</span>
+                    <span className="ml-auto font-mono text-amber-400 font-bold">+৳1,500</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 p-2 bg-slate-950/60 backdrop-blur-sm rounded-xl border border-slate-800/80 text-xs cursor-pointer hover:border-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={includeExamFee}
+                      onChange={(e) => setIncludeExamFee(e.target.checked)}
+                      className="accent-red-600 rounded"
+                    />
+                    <span className="text-slate-200">Official NAT-TEST / JLPT Exam Registration</span>
+                    <span className="ml-auto font-mono text-amber-400 font-bold">+৳3,500</span>
+                  </label>
                 </div>
               </div>
 
-              {/* Dhaka Campus */}
-              <div className="space-y-1 border-l-2 border-emerald-500/80 pl-3 pt-2">
-                <div className="text-white font-bold text-xs flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>{t.footer.dhakaOffice}</span>
-                </div>
-                <p className="text-[11px] text-slate-400 leading-snug">
-                  {t.footer.dhakaAddress}
-                </p>
-                <div className="text-[11px] font-mono text-emerald-400 pt-0.5">
-                  Hotline / WhatsApp: +880 1300-634046
-                </div>
-              </div>
             </div>
 
-            {/* Column 3: Quick Navigation & Services (3 cols) */}
-            <div className="md:col-span-3 space-y-3">
-              <h5 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                QUICK ACCESS
-              </h5>
-              <ul className="space-y-2 text-xs">
-                <li>
-                  <a href="#leadership" className="hover:text-red-400 transition-colors">
-                    Sensei Abdur Razzak (JLPT N1)
-                  </a>
-                </li>
-                <li>
-                  <a href="#curriculum" className="hover:text-red-400 transition-colors">
-                    JLPT N5 - N2 Curriculum
-                  </a>
-                </li>
-                <li>
-                  <a href="#ecosystem" className="hover:text-red-400 transition-colors">
-                    Nihomi.com AI Practice Engine
-                  </a>
-                </li>
-                <li>
-                  <button 
-                    onClick={() => onOpenValidator && onOpenValidator('DILS-CERT-2026-0048')}
-                    className="hover:text-amber-300 transition-colors text-left"
-                  >
-                    Verify Student Certificate (QR)
-                  </button>
-                </li>
-                <li>
-                  <button 
-                    onClick={() => setPartnerModalOpen(true)}
-                    className="text-red-400 hover:text-red-300 font-bold transition-colors text-left"
-                  >
-                    Institutional Partnership Form
-                  </button>
-                </li>
-              </ul>
+            {/* Step 3: Transparent Breakdown Summary */}
+            <div className="bg-slate-950/70 backdrop-blur-sm rounded-2xl p-5 border border-slate-800/80 space-y-3 shadow-inner">
+              <div className="flex items-center justify-between text-xs font-mono pb-2 border-b border-slate-800/80">
+                <span className="text-slate-400">COST ITEM BREAKDOWN</span>
+                <span className="text-slate-400">AMOUNT (BDT)</span>
+              </div>
+
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between text-slate-300">
+                  <span>Classroom Tuition (150-310h Intensive Live Coaching)</span>
+                  <span className="font-mono font-bold text-white">
+                    ৳{(calcCourse === 'n5' ? 12000 : calcCourse === 'n4' ? 14000 : calcCourse === 'ssw' ? 15000 : 22000).toLocaleString()}
+                  </span>
+                </div>
+
+                <div className="flex justify-between text-slate-300">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    <span>Nihomi.com 24/7 AI Cloud Practice License (Unlimited)</span>
+                  </span>
+                  <span className="font-mono font-bold text-emerald-400">
+                    ৳0 FREE <span className="line-through text-slate-600 text-[10px]">৳3,000</span>
+                  </span>
+                </div>
+
+                <div className="flex justify-between text-slate-300">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    <span>Sensei Razzak's 1-on-1 Visa Mock &amp; Document Audit</span>
+                  </span>
+                  <span className="font-mono font-bold text-emerald-400">
+                    ৳0 INCLUDED <span className="line-through text-slate-600 text-[10px]">৳5,000</span>
+                  </span>
+                </div>
+
+                {includeBooks && (
+                  <div className="flex justify-between text-slate-300">
+                    <span>Original Japanese Textbooks &amp; Audio CDs</span>
+                    <span className="font-mono font-bold text-amber-400">৳1,500</span>
+                  </div>
+                )}
+
+                {includeExamFee && (
+                  <div className="flex justify-between text-slate-300">
+                    <span>NAT-TEST / JLPT Official Exam Direct Fee</span>
+                    <span className="font-mono font-bold text-amber-400">৳3,500</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Total & Installments */}
+              {(() => {
+                const baseTuition = calcCourse === 'n5' ? 12000 : calcCourse === 'n4' ? 14000 : calcCourse === 'ssw' ? 15000 : 22000;
+                const total = baseTuition + (includeBooks ? 1500 : 0) + (includeExamFee ? 3500 : 0);
+                const firstInst = Math.round(baseTuition * 0.6) + (includeBooks ? 1500 : 0);
+                const secondInst = total - firstInst;
+
+                return (
+                  <div className="pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <div className="text-[11px] font-mono text-slate-400 uppercase">Total Estimated Investment</div>
+                      <div className="text-2xl font-black text-white font-mono flex items-baseline gap-2">
+                        <span>৳{total.toLocaleString()}</span>
+                        <span className="text-[11px] text-emerald-400 font-sans font-bold">100% Transparent</span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                        Installments: 1st ৳{firstInst.toLocaleString()} (At admission) • 2nd ৳{secondInst.toLocaleString()} (After 45 days)
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setFastAdmissionOpen(true)}
+                      className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-red-950/60 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Receipt className="w-4 h-4" />
+                      <span>Lock My Seat with this Plan</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                );
+              })()}
+
             </div>
 
           </div>
 
-          {/* Bottom Copyright & Disclaimer */}
-          <div className="pt-8 border-t border-indigo-950/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-400">
-            <div>{t.footer.copyright}</div>
-            <div className="flex items-center gap-4">
-              <span className="hover:text-slate-300 cursor-pointer">Privacy Policy (個人情報保護方針)</span>
-              <span>•</span>
-              <span className="hover:text-slate-300 cursor-pointer">Terms of Service (利用規約)</span>
-              <span>•</span>
-              <span className="hover:text-slate-300 cursor-pointer">COE Compliance Standards</span>
+        </div>
+      </section>
+
+
+      {/* =========================================================================
+          7. ALUMNI COE & VISA SUCCESS WALL (Minimalist High-Trust Cards)
+         ========================================================================= */}
+      <section id="alumni-coe" className="py-16 sm:py-20 bg-[#070D1E] border-b border-indigo-950">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 space-y-8">
+          
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div className="space-y-1">
+              <span className="text-red-400 font-mono text-xs font-bold uppercase tracking-wider">
+                {t.alumniSection.tag}
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                {t.alumniSection.title}
+              </h2>
+              <p className="text-xs text-slate-400">
+                {t.alumniSection.subtitle}
+              </p>
             </div>
+
+            {/* City Filter Pills */}
+            <div className="flex items-center gap-1.5 bg-[#0A132C] border border-indigo-900 rounded-lg p-1 text-xs">
+              {['All', 'Tokyo', 'Osaka', 'Nagoya', 'Kyoto'].map((city) => (
+                <button
+                  key={city}
+                  onClick={() => setAlumniFilter(city as any)}
+                  className={`px-2.5 py-1 rounded font-bold text-[11px] transition-all ${
+                    alumniFilter === city 
+                      ? 'bg-red-600 text-white' 
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {city}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {filteredAlumni.map((alumni) => (
+              <div 
+                key={alumni.id}
+                className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-4 space-y-3 shadow-lg hover:border-red-500/50 hover:shadow-[0_0_20px_rgba(239,68,68,0.15)] transition-all flex flex-col justify-between"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <img 
+                      src={alumni.studentPhoto} 
+                      alt={alumni.studentName}
+                      className="w-12 h-12 rounded-xl object-cover border border-slate-700/60 shadow-sm"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div>
+                      <h4 className="text-xs font-bold text-white leading-tight">{alumni.studentName}</h4>
+                      <span className="text-[10px] text-emerald-400 font-mono font-bold flex items-center gap-1 mt-0.5">
+                        <CheckCircle2 className="w-3 h-3" />
+                        <span>COE 交付済</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-2 bg-slate-950/60 backdrop-blur-sm rounded-xl border border-slate-800/80 text-[11px] space-y-1">
+                    <div className="font-semibold text-slate-200 line-clamp-1">{alumni.institutionInJapan}</div>
+                    <div className="text-[10px] text-slate-400 flex items-center justify-between">
+                      <span>{alumni.destinationCity}</span>
+                      <span className="text-amber-400 font-mono font-bold">{alumni.intake}</span>
+                    </div>
+                  </div>
+
+                  <div className="text-[10px] font-mono text-slate-400 bg-slate-950/60 px-2 py-1 rounded-lg border border-slate-800/60 flex items-center justify-between">
+                    <span>{alumni.coeNumber}</span>
+                    <span className="text-red-400 font-bold">{alumni.visaType}</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px]">
+                  <span className="text-emerald-400 font-mono">{alumni.passingScore}</span>
+                  <button 
+                    onClick={() => onOpenValidator && onOpenValidator('DILS-CERT-2026-0048')}
+                    className="text-slate-400 hover:text-white flex items-center gap-0.5"
+                    title="Audit Record"
+                  >
+                    <span>Audit</span>
+                    <ChevronRight className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+        </div>
+      </section>
+
+
+      {/* =========================================================================
+          8. ZERO-FORGERY CRYPTOGRAPHIC QR VERIFICATION (High B2B Trust)
+         ========================================================================= */}
+      <section id="verify-system" className="py-16 sm:py-20 bg-[#050A18] border-b border-indigo-950">
+        <div className="max-w-5xl mx-auto px-4 sm:px-8">
+          <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-3xl p-6 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl hover:border-slate-700/80 transition-all">
+            
+            <div className="space-y-3 max-w-xl text-center md:text-left">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-950/80 text-emerald-400 text-[11px] font-mono font-bold border border-emerald-800/50">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>{t.verifySection.tag}</span>
+              </div>
+              <h3 className="text-xl sm:text-2xl font-black text-white font-serif">
+                {t.verifySection.title}
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                {t.verifySection.desc}
+              </p>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2">
+                <div className="bg-slate-950/60 backdrop-blur-sm p-2.5 rounded-xl border border-slate-800/80 text-left">
+                  <div className="text-[10px] text-slate-400 font-mono">Digital Signature</div>
+                  <div className="text-xs font-bold text-white font-mono">SHA-256 Auth</div>
+                </div>
+                <div className="bg-slate-950/60 backdrop-blur-sm p-2.5 rounded-xl border border-slate-800/80 text-left">
+                  <div className="text-[10px] text-slate-400 font-mono">Immigration Bureau</div>
+                  <div className="text-xs font-bold text-emerald-400 font-mono">Instant Valid</div>
+                </div>
+                <div className="bg-slate-950/60 backdrop-blur-sm p-2.5 rounded-xl border border-slate-800/80 text-left col-span-2 sm:col-span-1">
+                  <div className="text-[10px] text-slate-400 font-mono">Personal Stamp</div>
+                  <div className="text-xs font-bold text-red-400 font-mono">Razzak 落款印</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-shrink-0 flex flex-col items-center gap-3 bg-slate-950/70 backdrop-blur-sm p-6 rounded-2xl border border-slate-800/80 text-center shadow-xl">
+              <div className="w-28 h-28 bg-white p-2 rounded-xl flex items-center justify-center shadow-inner">
+                <QrCode className="w-24 h-24 text-slate-950" />
+              </div>
+              <div className="text-[10px] font-mono text-slate-300">
+                ID: DILS-CERT-2026-0048
+              </div>
+              <button
+                onClick={() => onOpenValidator && onOpenValidator('DILS-CERT-2026-0048')}
+                className="w-full px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5"
+              >
+                <Search className="w-3.5 h-3.5" />
+                <span>Test Live QR Audit</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+
+      {/* =========================================================================
+          9. DUAL CAMPUS PRESENCE (Dhaka Farmgate HQ & Tokyo Liaison Desk)
+         ========================================================================= */}
+      <section id="campuses" className="py-16 sm:py-20 bg-[#070D1E] border-b border-indigo-950">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 space-y-8">
+          
+          <div className="text-center space-y-1">
+            <span className="text-red-400 font-mono text-xs font-bold uppercase tracking-wider">
+              GLOBAL HUBS
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              Dhaka Headquarters &amp; Tokyo Liaison Desk
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* Dhaka Campus Card */}
+            <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl hover:border-slate-700/80 transition-all">
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-red-500" />
+                  <h3 className="text-base font-bold text-white">Dhaka Farmgate Campus (ダッカ本部校)</h3>
+                </div>
+                <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-800">
+                  HEADQUARTERS
+                </span>
+              </div>
+
+              <div className="text-xs text-slate-300 space-y-1.5">
+                <p className="font-semibold text-white">
+                  7th Floor, BTI Central Plaza, 95 Green Road, Farmgate, Dhaka 1215
+                </p>
+                <p className="text-slate-400 text-[11px]">
+                  (Opposite to Government Science College, Farmgate intersection)
+                </p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 pt-1 text-[11px]">
+                <div className="bg-slate-950/60 backdrop-blur-sm p-2.5 rounded-xl border border-slate-800/80">
+                  <div className="font-bold text-white">Audio Lab</div>
+                  <div className="text-[10px] text-slate-400">Acoustic Drills</div>
+                </div>
+                <div className="bg-slate-950/60 backdrop-blur-sm p-2.5 rounded-xl border border-slate-800/80">
+                  <div className="font-bold text-white">CBT Room</div>
+                  <div className="text-[10px] text-slate-400">Nihomi Terminals</div>
+                </div>
+                <div className="bg-slate-950/60 backdrop-blur-sm p-2.5 rounded-xl border border-slate-800/80">
+                  <div className="font-bold text-white">Mock Studio</div>
+                  <div className="text-[10px] text-slate-400">Visa Interviews</div>
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center justify-between text-xs">
+                <span className="text-slate-400">Hotline: 01764-395945</span>
+                <button
+                  onClick={() => setFastAdmissionOpen(true)}
+                  className="text-red-400 hover:text-red-300 font-bold flex items-center gap-1"
+                >
+                  <span>Book Campus Visit</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Tokyo Liaison Card */}
+            <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl hover:border-slate-700/80 transition-all">
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-amber-400" />
+                  <h3 className="text-base font-bold text-white">Tokyo Liaison Desk (東京連絡窓口)</h3>
+                </div>
+                <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-800">
+                  JAPAN DESK
+                </span>
+              </div>
+
+              <div className="text-xs text-slate-300 space-y-1.5">
+                <p className="font-semibold text-white">
+                  Shinjuku-ku, Tokyo 160-0023, Japan (東京都新宿区)
+                </p>
+                <p className="text-slate-400 text-[11px]">
+                  Direct coordination desk for Japanese language academies &amp; supervising organizations.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 pt-1 text-[11px]">
+                <div className="bg-slate-950/60 backdrop-blur-sm p-2.5 rounded-xl border border-slate-800/80">
+                  <div className="font-bold text-white">B2B Zoom</div>
+                  <div className="text-[10px] text-slate-400">School Liaison</div>
+                </div>
+                <div className="bg-slate-950/60 backdrop-blur-sm p-2.5 rounded-xl border border-slate-800/80">
+                  <div className="font-bold text-white">COE Dispatch</div>
+                  <div className="text-[10px] text-slate-400">Immigration Check</div>
+                </div>
+                <div className="bg-slate-950/60 backdrop-blur-sm p-2.5 rounded-xl border border-slate-800/80">
+                  <div className="font-bold text-white">Arrival Care</div>
+                  <div className="text-[10px] text-slate-400">Airport Welcome</div>
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center justify-between text-xs">
+                <span className="text-slate-400">Email: tokyo@dilsbd.com</span>
+                <button
+                  onClick={() => setPartnerModalOpen(true)}
+                  className="text-red-400 hover:text-red-300 font-bold flex items-center gap-1"
+                >
+                  <span>Connect Tokyo Desk</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+
+      {/* =========================================================================
+          10. B2B PARTNERSHIP FLOW (4 Steps)
+         ========================================================================= */}
+      <section id="partners" className="py-16 bg-[#050A18] border-b border-indigo-950">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 space-y-8">
+          
+          <div className="text-center space-y-1">
+            <span className="text-red-400 font-mono text-xs font-bold uppercase tracking-wider">
+              {t.steps.tag}
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              {t.steps.title}
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {t.steps.items.map((s, i) => (
+              <div key={i} className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-4 space-y-1.5 shadow-md hover:border-red-500/40 hover:shadow-[0_0_15px_rgba(239,68,68,0.1)] transition-all">
+                <span className="text-xs font-mono font-bold text-red-400">STEP {s.step}</span>
+                <div className="text-xs font-bold text-white">{s.title}</div>
+                <div className="text-[11px] text-slate-400">{s.descJp}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center pt-2">
+            <button
+              onClick={() => setPartnerModalOpen(true)}
+              className="px-6 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl shadow-md transition-all inline-flex items-center gap-2"
+            >
+              <Mail className="w-3.5 h-3.5" />
+              <span>{currentLang === 'jp' ? '提携のお問い合わせフォーム' : 'Inquire for Partnership'}</span>
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+
+      {/* =========================================================================
+          11. CORPORATE FOOTER (Tokyo & Dhaka Representation)
+         ========================================================================= */}
+      <footer className="bg-[#030712] border-t border-indigo-950 text-slate-400 text-xs py-10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+          
+          <div className="space-y-1">
+            <div className="text-white font-bold text-sm">
+              ダッカ国際語学学校 • Dhaka International Language School (DILS)
+            </div>
+            <div className="text-[11px] text-slate-400">
+              Tokyo Desk: Shinjuku-ku, Tokyo 160-0023 | Dhaka: BTI Central Plaza, 95 Green Road, Farmgate
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 text-[11px]">
+            <a href="mailto:tokyo@dilsbd.com" className="hover:text-red-400 transition-colors">
+              tokyo@dilsbd.com
+            </a>
+            <span>•</span>
+            <a href="https://wa.me/8801300634046" target="_blank" rel="noreferrer" className="text-emerald-400 hover:underline">
+              WhatsApp: +880 1300-634046
+            </a>
           </div>
 
         </div>
@@ -1543,164 +1781,561 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
 
 
       {/* =========================================================================
-          9. INTERACTIVE B2B PARTNER SCHOOL MODAL
-             Institutional inquiry for Japanese Language Schools & Supervising Orgs
+          12. FLOATING 1-CLICK WHATSAPP BUTTON (Bottom-Right)
+         ========================================================================= */}
+      <div className="fixed bottom-6 right-6 z-40">
+        <a
+          href="https://wa.me/8801300634046?text=Hello%20Sensei%20Razzak,%20I%20am%20interested%20in%20DILS%20Japanese%20Language%20and%20Visa."
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-full shadow-2xl font-bold text-xs border border-emerald-400/40 transition-transform hover:scale-105"
+        >
+          <MessageCircle className="w-4 h-4" />
+          <span>Chat on WhatsApp</span>
+        </a>
+      </div>
+
+
+      {/* =========================================================================
+          13. FAST 2-CLICK ADMISSION SLIDE-OVER DRAWER
          ========================================================================= */}
       <AnimatePresence>
-        {partnerModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-            
+        {fastAdmissionOpen && (
+          <div className="fixed inset-0 z-50 flex justify-end bg-black/80 backdrop-blur-sm">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-[#0A132C] border border-indigo-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative text-left"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="bg-[#0A132C] border-l border-indigo-800 w-full max-w-md h-full flex flex-col justify-between p-6 shadow-2xl overflow-y-auto"
             >
-              
-              {/* Close Button */}
-              <button
-                onClick={() => setPartnerModalOpen(false)}
-                className="absolute top-5 right-5 text-slate-400 hover:text-white p-1 rounded-lg bg-indigo-950/60"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              {!partnerForm.submitted ? (
-                <form onSubmit={handlePartnerSubmit} className="space-y-4">
-                  
-                  <div>
-                    <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-red-400 mb-1">
-                      <Building2 className="w-3.5 h-3.5" />
-                      <span>JAPANESE INSTITUTION INQUIRY (提携相談)</span>
-                    </div>
-                    <h3 className="text-xl font-black text-white font-serif">
-                      {currentLang === 'jp' ? '日本の教育機関・受入企業様 お問い合わせ' : 'Partner School Consultation'}
+              <div>
+                <div className="flex items-center justify-between pb-4 border-b border-indigo-900">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="w-5 h-5 text-red-500" />
+                    <h3 className="text-base font-black text-white font-serif">
+                      Quick Admission • ভর্তি আবেদন
                     </h3>
-                    <p className="text-xs text-slate-400">
-                      Connect directly with Md. Abdur Razzak and our Tokyo representative.
-                    </p>
                   </div>
+                  <button
+                    onClick={() => setFastAdmissionOpen(false)}
+                    className="p-1 rounded-lg text-slate-400 hover:text-white"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
 
-                  <div className="space-y-3 text-xs">
+                {!admissionForm.submitted ? (
+                  <form onSubmit={handleFastAdmissionSubmit} className="space-y-4 pt-4 text-xs">
+                    {/* Course Selection */}
                     <div>
-                      <label className="block text-slate-300 font-medium mb-1">
-                        Institution / Company Name (学校名・企業名) *
+                      <label className="block text-slate-300 font-bold mb-1.5">
+                        Select Course (কোর্স নির্বাচন করুন)
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {t.programs.items.map((prog) => (
+                          <button
+                            type="button"
+                            key={prog.id}
+                            onClick={() => setSelectedCourseId(prog.id)}
+                            className={`p-2.5 rounded-xl border text-left transition-all ${
+                              selectedCourseId === prog.id
+                                ? 'bg-red-600/20 border-red-500 text-white'
+                                : 'bg-[#060B19] border-indigo-950 text-slate-300 hover:border-indigo-800'
+                            }`}
+                          >
+                            <div className="font-bold text-[11px]">{prog.name}</div>
+                            <div className="text-[10px] text-amber-400 font-mono mt-0.5">{prog.fee}</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Batch Timing */}
+                    <div>
+                      <label className="block text-slate-300 font-bold mb-1.5">
+                        Preferred Batch (ব্যাচ সময়)
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {['Morning (10:00 AM)', 'Evening (06:00 PM)', 'Friday Only'].map((batch) => (
+                          <button
+                            type="button"
+                            key={batch}
+                            onClick={() => setSelectedBatchTime(batch)}
+                            className={`p-2 rounded-lg border text-center text-[10px] font-bold ${
+                              selectedBatchTime === batch
+                                ? 'bg-indigo-600 text-white border-indigo-400'
+                                : 'bg-[#060B19] text-slate-400 border-indigo-950'
+                            }`}
+                          >
+                            {batch}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Student Full Name */}
+                    <div>
+                      <label className="block text-slate-300 font-bold mb-1">
+                        Student Full Name (আপনার পূর্ণ নাম) *
                       </label>
                       <input
                         type="text"
                         required
-                        placeholder="e.g. 東京国際日本語学校 / Tokyo Japanese Language Institute"
-                        value={partnerForm.orgName}
-                        onChange={(e) => setPartnerForm({ ...partnerForm, orgName: e.target.value })}
-                        className="w-full bg-[#060B19] border border-indigo-900 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-red-500 text-xs"
+                        placeholder="e.g. Tanvir Kabir"
+                        value={admissionForm.fullName}
+                        onChange={(e) => setAdmissionForm({ ...admissionForm, fullName: e.target.value })}
+                        className="w-full bg-[#060B19] border border-indigo-900 rounded-lg px-3 py-2.5 text-white text-xs focus:outline-none focus:border-red-500"
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-slate-300 font-medium mb-1">
-                          Organization Type (区分) *
-                        </label>
-                        <select
-                          value={partnerForm.orgType}
-                          onChange={(e) => setPartnerForm({ ...partnerForm, orgType: e.target.value })}
-                          className="w-full bg-[#060B19] border border-indigo-900 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-red-500 text-xs"
-                        >
-                          <option value="language_school">日本語学校 (Language School)</option>
-                          <option value="supervising_org">監理団体 / 登録支援機関</option>
-                          <option value="vocational">専門学校 / 大学 (College / University)</option>
-                          <option value="enterprise">日本企業 (Direct Enterprise)</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-300 font-medium mb-1">
-                          Location in Japan (所在地)
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="e.g. 東京都新宿区, 大阪市"
-                          value={partnerForm.locationInJapan}
-                          onChange={(e) => setPartnerForm({ ...partnerForm, locationInJapan: e.target.value })}
-                          className="w-full bg-[#060B19] border border-indigo-900 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-red-500 text-xs"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-slate-300 font-medium mb-1">
-                          Contact Person (ご担当者様名) *
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. 山田 太郎 / Tanaka"
-                          value={partnerForm.contactPerson}
-                          onChange={(e) => setPartnerForm({ ...partnerForm, contactPerson: e.target.value })}
-                          className="w-full bg-[#060B19] border border-indigo-900 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-red-500 text-xs"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-300 font-medium mb-1">
-                          Official Email (メールアドレス) *
-                        </label>
-                        <input
-                          type="email"
-                          required
-                          placeholder="partner@school.ac.jp"
-                          value={partnerForm.email}
-                          onChange={(e) => setPartnerForm({ ...partnerForm, email: e.target.value })}
-                          className="w-full bg-[#060B19] border border-indigo-900 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-red-500 text-xs"
-                        />
-                      </div>
-                    </div>
-
+                    {/* WhatsApp Phone */}
                     <div>
-                      <label className="block text-slate-300 font-medium mb-1">
-                        Specific Request / Intake Terms (ご要望・受入希望人数)
+                      <label className="block text-slate-300 font-bold mb-1">
+                        WhatsApp / Contact Number (মোবাইল নম্বর) *
                       </label>
-                      <textarea
-                        rows={2}
-                        placeholder="e.g., Requesting online Zoom briefing with Sensei Razzak for October / April intake..."
-                        value={partnerForm.notes}
-                        onChange={(e) => setPartnerForm({ ...partnerForm, notes: e.target.value })}
-                        className="w-full bg-[#060B19] border border-indigo-900 rounded-xl px-3.5 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-red-500 text-xs"
+                      <input
+                        type="tel"
+                        required
+                        placeholder="017XXXXXXXX"
+                        value={admissionForm.phone}
+                        onChange={(e) => setAdmissionForm({ ...admissionForm, phone: e.target.value })}
+                        className="w-full bg-[#060B19] border border-indigo-900 rounded-lg px-3 py-2.5 text-white text-xs focus:outline-none focus:border-red-500"
                       />
                     </div>
-                  </div>
 
-                  <div className="pt-2">
+                    {/* Campus Location Confirmation */}
+                    <div className="p-3 bg-[#060B19] rounded-xl border border-indigo-950 text-slate-400 text-[11px] space-y-1">
+                      <div className="font-bold text-slate-200">Campus: Farmgate, Dhaka</div>
+                      <div>BTI Central Plaza (7th Floor), 95 Green Road.</div>
+                      <div className="text-emerald-400 font-mono text-[10px]">
+                        ✓ Unlimited 24/7 Nihomi AI Access Included
+                      </div>
+                    </div>
+
                     <button
                       type="submit"
-                      className="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-red-950/60 transition-transform active:scale-95 flex items-center justify-center gap-2 min-h-[44px]"
+                      className="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl shadow-lg shadow-red-950/60 text-xs transition-all"
                     >
-                      <Mail className="w-4 h-4" />
-                      <span>{currentLang === 'jp' ? '提携相談・Zoom面談を送信' : 'Submit Institutional Request'}</span>
+                      Confirm Enrollment (ভর্তি নিশ্চিত করুন)
                     </button>
-                    <p className="text-[10px] text-center text-slate-400 mt-2">
-                      Our Tokyo liaison or Farmgate headquarters will reply within 24 business hours.
+                  </form>
+                ) : (
+                  <div className="py-12 text-center space-y-4">
+                    <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
+                    <h4 className="text-lg font-black text-white font-serif">ভর্তি আবেদন গৃহীত হয়েছে!</h4>
+                    <p className="text-xs text-slate-300">
+                      ধন্যবাদ {admissionForm.fullName}। আমাদের অ্যাডমিশন কো-অর্ডিনেটর এবং রাজ্জাক স্যার শীঘ্রই আপনার নম্বরে যোগাযোগ করবেন।
+                    </p>
+                    <a
+                      href={`https://wa.me/8801300634046?text=Hi%20Sensei%20Razzak,%20I%20just%20submitted%20my%20admission%20form%20for%20${selectedCourseId}%20at%20DILS.%20My%20name%20is%20${admissionForm.fullName}.`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      <span>WhatsApp এ দ্রুত আপডেট নিন</span>
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              <div className="text-[10px] text-slate-500 text-center pt-4 border-t border-indigo-950">
+                DILS Dhaka • Verified Japanese Language Institution
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+
+      {/* =========================================================================
+          14. 30-SECOND NIHOMI QUICK-TEST POPUP (Gamified Live Practice)
+         ========================================================================= */}
+      <AnimatePresence>
+        {quickTestOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#0A132C] border border-indigo-800 rounded-2xl p-6 max-w-md w-full shadow-2xl relative"
+            >
+              <button
+                onClick={() => setQuickTestOpen(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              {!testCompleted ? (
+                <div className="space-y-4 text-xs">
+                  {/* Test Header */}
+                  <div className="flex items-center justify-between border-b border-indigo-900 pb-3">
+                    <div className="flex items-center gap-1.5">
+                      <Zap className="w-4 h-4 text-amber-400" />
+                      <span className="font-bold text-white text-sm">Nihomi 30s Quick Test</span>
+                    </div>
+                    <span className="font-mono text-xs text-red-400 font-bold">
+                      Q {testCurrentQ + 1} / {testQuestions.length}
+                    </span>
+                  </div>
+
+                  {/* Question Box */}
+                  <div className="bg-[#060B19] border border-indigo-950 p-4 rounded-xl space-y-2 text-center">
+                    <p className="text-sm font-bold text-white">
+                      {testQuestions[testCurrentQ].qJp}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {testQuestions[testCurrentQ].qBn}
+                    </p>
+                    <button
+                      onClick={() => playPronunciation(testQuestions[testCurrentQ].audio, 'ja-JP')}
+                      className="inline-flex items-center gap-1 text-[11px] text-amber-400 bg-amber-950/40 px-2.5 py-1 rounded-full border border-amber-600/30 hover:bg-amber-900/40"
+                    >
+                      <Volume2 className="w-3.5 h-3.5" />
+                      <span>Hear Japanese Audio</span>
+                    </button>
+                  </div>
+
+                  {/* Options */}
+                  <div className="space-y-2">
+                    {testQuestions[testCurrentQ].options.map((opt, oi) => {
+                      const isChosen = selectedChoice === oi;
+                      return (
+                        <button
+                          key={oi}
+                          onClick={() => handleAnswerQuestion(oi)}
+                          className={`w-full p-2.5 rounded-xl border text-left text-xs font-semibold transition-all ${
+                            isChosen
+                              ? opt.isCorrect
+                                ? 'bg-emerald-950/80 border-emerald-500 text-white'
+                                : 'bg-red-950/80 border-red-500 text-white'
+                              : 'bg-[#0B1530] border-indigo-900/60 text-slate-200 hover:border-indigo-700'
+                          }`}
+                        >
+                          {opt.text}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="py-4 text-center space-y-4">
+                  <div className="w-14 h-14 rounded-full bg-emerald-950 border border-emerald-500 flex items-center justify-center mx-auto text-emerald-400 font-black text-xl">
+                    {Math.round((testScore / testQuestions.length) * 100)}%
+                  </div>
+                  <div>
+                    <h4 className="text-base font-black text-white font-serif">
+                      Your Nihomi Readiness Score: {testScore}/{testQuestions.length}
+                    </h4>
+                    <p className="text-xs text-slate-300 mt-1">
+                      {testScore === 3
+                        ? 'অসাধারণ! আপনি সরাসরি JLPT N5 অথবা N4 ব্যাচে ভর্তি হওয়ার জন্য সম্পূর্ণ প্রস্তুত।'
+                        : 'ভালো চেষ্টা! DILS Farmgate ক্লাসরুমে মাত্র ৩ মাসেই আপনি ফুল কনফিডেন্স পাবেন।'}
                     </p>
                   </div>
 
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setQuickTestOpen(false);
+                        setFastAdmissionOpen(true);
+                      }}
+                      className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl"
+                    >
+                      Apply with Discount
+                    </button>
+                    <button
+                      onClick={resetTest}
+                      className="px-4 py-2.5 bg-indigo-950 text-slate-300 text-xs font-bold rounded-xl border border-indigo-800"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+
+      {/* =========================================================================
+          15. B2B PARTNER INQUIRY MODAL (Fast & Concise)
+         ========================================================================= */}
+      <AnimatePresence>
+        {partnerModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              className="bg-[#0A132C] border border-indigo-800 rounded-2xl p-6 max-w-md w-full shadow-2xl relative"
+            >
+              <button
+                onClick={() => setPartnerModalOpen(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              {!partnerForm.submitted ? (
+                <form onSubmit={handlePartnerSubmit} className="space-y-3.5 text-xs text-left">
+                  <div>
+                    <h3 className="text-base font-black text-white font-serif">
+                      {currentLang === 'jp' ? '日本の教育機関・企業様 提携相談' : 'Institutional Partner Inquiry'}
+                    </h3>
+                    <p className="text-[11px] text-slate-400">
+                      Connect directly with Md. Abdur Razzak and our Tokyo desk.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-300 font-medium mb-1">
+                      Organization / School Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. 東京国際日本語学校"
+                      value={partnerForm.orgName}
+                      onChange={(e) => setPartnerForm({ ...partnerForm, orgName: e.target.value })}
+                      className="w-full bg-[#060B19] border border-indigo-900 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-red-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-slate-300 font-medium mb-1">Contact Person *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Name"
+                        value={partnerForm.contactPerson}
+                        onChange={(e) => setPartnerForm({ ...partnerForm, contactPerson: e.target.value })}
+                        className="w-full bg-[#060B19] border border-indigo-900 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-red-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-300 font-medium mb-1">Official Email *</label>
+                      <input
+                        type="email"
+                        required
+                        placeholder="email@school.jp"
+                        value={partnerForm.email}
+                        onChange={(e) => setPartnerForm({ ...partnerForm, email: e.target.value })}
+                        className="w-full bg-[#060B19] border border-indigo-900 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-red-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-300 font-medium mb-1">Requirements / Intake</label>
+                    <textarea
+                      rows={2}
+                      placeholder="e.g., April/October intake requirement..."
+                      value={partnerForm.notes}
+                      onChange={(e) => setPartnerForm({ ...partnerForm, notes: e.target.value })}
+                      className="w-full bg-[#060B19] border border-indigo-900 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-red-500"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg shadow-md"
+                  >
+                    {currentLang === 'jp' ? '提携相談を送信' : 'Submit Consultation Request'}
+                  </button>
                 </form>
               ) : (
-                <div className="py-8 text-center space-y-4">
-                  <div className="w-14 h-14 rounded-full bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 flex items-center justify-center mx-auto">
-                    <CheckCircle2 className="w-7 h-7" />
-                  </div>
-                  <h4 className="text-xl font-black text-white font-serif">
-                    {currentLang === 'jp' ? 'お問い合わせを受け付けました' : 'Institutional Inquiry Received'}
-                  </h4>
-                  <p className="text-xs text-slate-300 max-w-sm mx-auto leading-relaxed">
-                    Thank you. We have recorded your request. Sensei Abdur Razzak and our Tokyo desk will review your requirements and follow up promptly.
+                <div className="py-6 text-center space-y-2">
+                  <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
+                  <h4 className="text-base font-bold text-white">Inquiry Received</h4>
+                  <p className="text-xs text-slate-300">
+                    Thank you. Sensei Razzak and Tokyo liaison will respond promptly.
                   </p>
                 </div>
               )}
-
             </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
+
+      {/* =========================================================================
+          16. WEEKLY CLASS ROUTINE & TIMETABLE MODAL
+         ========================================================================= */}
+      <AnimatePresence>
+        {scheduleModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#0A132C] border border-indigo-800 rounded-2xl p-6 max-w-xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto"
+            >
+              <button
+                onClick={() => setScheduleModalOpen(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="space-y-4 text-xs">
+                {/* Modal Header */}
+                <div className="border-b border-indigo-900 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-amber-400" />
+                    <h3 className="text-base font-black text-white font-serif">
+                      Class Timetable &amp; Routine • সাপ্তাহিক ক্লাস রুটিন
+                    </h3>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    DILS Farmgate Campus • 7th Floor, BTI Central Plaza, 95 Green Road, Dhaka
+                  </p>
+                </div>
+
+                {/* 3 Batches Cards */}
+                <div className="space-y-2.5">
+                  <div className="bg-[#060B19] border border-indigo-950 p-3.5 rounded-xl space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-white text-xs">Morning Batch (সকালের ব্যাচ)</span>
+                      <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800">
+                        10:00 AM – 12:00 PM
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-amber-400 font-medium">Sunday, Tuesday, Thursday (রবি, মঙ্গল, বৃহস্পতি)</div>
+                    <div className="text-[10px] text-slate-400">
+                      Best suited for college &amp; university students aiming for the next upcoming JLPT/NAT intake.
+                    </div>
+                  </div>
+
+                  <div className="bg-[#060B19] border border-indigo-950 p-3.5 rounded-xl space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-white text-xs">Evening Executive Batch (সান্ধ্য ব্যাচ)</span>
+                      <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800">
+                        06:00 PM – 08:00 PM
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-amber-400 font-medium">Sunday, Tuesday, Thursday (রবি, মঙ্গল, বৃহস্পতি)</div>
+                    <div className="text-[10px] text-slate-400">
+                      Designed for IT engineers, graduates &amp; working professionals preparing for Japan work visas.
+                    </div>
+                  </div>
+
+                  <div className="bg-[#060B19] border border-indigo-950 p-3.5 rounded-xl space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-white text-xs">Weekend Super-Intensive (উইকেন্ড স্পেশাল)</span>
+                      <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800">
+                        09:00 AM – 01:00 PM (4h)
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-amber-400 font-medium">Friday &amp; Saturday (শুক্র ও শনিবার)</div>
+                    <div className="text-[10px] text-slate-400">
+                      High-velocity course for distant commuters with complete textbook, Nihomi drill &amp; mock exams.
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Free Labs */}
+                <div className="bg-indigo-950/30 border border-indigo-900/60 p-3 rounded-xl flex items-center justify-between text-[11px]">
+                  <div>
+                    <div className="font-bold text-slate-200">Acoustic Audio Shadowing Lab</div>
+                    <div className="text-[10px] text-slate-400">Open 7 days (09:00 AM – 08:00 PM) with high-fidelity headphones</div>
+                  </div>
+                  <span className="font-mono text-emerald-400 font-bold">100% Free Access</span>
+                </div>
+
+                {/* Action buttons */}
+                <div className="pt-2 flex gap-2">
+                  <button
+                    onClick={() => {
+                      setScheduleModalOpen(false);
+                      setFastAdmissionOpen(true);
+                    }}
+                    className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <GraduationCap className="w-4 h-4" />
+                    <span>Choose Batch &amp; Enroll</span>
+                  </button>
+                  <button
+                    onClick={() => setScheduleModalOpen(false)}
+                    className="px-4 py-2.5 bg-[#060B19] text-slate-300 font-bold text-xs rounded-xl border border-indigo-900"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* =========================================================================
+          17. PWA INSTALL MODAL (iOS & Android Installation Guide)
+         ========================================================================= */}
+      <AnimatePresence>
+        {showPwaModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#0A132C] border border-amber-600/40 rounded-2xl p-6 max-w-md w-full shadow-2xl relative"
+            >
+              <button
+                onClick={() => setShowPwaModal(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="space-y-4 text-xs">
+                <div className="flex items-center gap-2 border-b border-indigo-900 pb-3">
+                  <div className="w-8 h-8 rounded-lg bg-red-600 flex items-center justify-center font-bold text-white text-sm">
+                    DILS
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white text-sm">
+                      {currentLang === 'jp' ? 'DILS公式アプリのインストール' : currentLang === 'bn' ? 'DILS মোবাইল অ্যাপ ইনস্টল করুন' : 'Install DILS Official App'}
+                    </h3>
+                    <p className="text-[10px] text-slate-400">PWA • Fast • Zero Storage Lag</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3 text-slate-300">
+                  <div className="bg-[#060B19] p-3 rounded-xl border border-indigo-950 space-y-1.5">
+                    <div className="font-bold text-amber-400 flex items-center gap-1.5">
+                      <Smartphone className="w-3.5 h-3.5" />
+                      <span>Android (Chrome / Edge / Firefox)</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      Tap the <strong>three vertical dots (⋮)</strong> at the top right of your browser, then select <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.
+                    </p>
+                  </div>
+
+                  <div className="bg-[#060B19] p-3 rounded-xl border border-indigo-950 space-y-1.5">
+                    <div className="font-bold text-sky-400 flex items-center gap-1.5">
+                      <Download className="w-3.5 h-3.5" />
+                      <span>iOS (iPhone / iPad Safari)</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      Tap the <strong>Share button (box with arrow ↑)</strong> at the bottom of Safari, scroll down, and tap <strong>"Add to Home Screen"</strong>.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    onClick={() => setShowPwaModal(false)}
+                    className="w-full py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl shadow-md transition-all"
+                  >
+                    Got It! • বুঝেছি
+                  </button>
+                </div>
+              </div>
+            </motion.div>
           </div>
         )}
       </AnimatePresence>
@@ -1708,4 +2343,5 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
     </div>
   );
 };
+
 export default JapaneseCorporateLanding;

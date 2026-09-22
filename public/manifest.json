@@ -1,0 +1,25 @@
+{
+  "name": "DILS Dhaka - Next-Gen Japanese Language School & Nihomi AI",
+  "short_name": "DILS Japan",
+  "description": "Learn Japanese with JLPT N1 Mentors & 24/7 Nihomi.com AI Practice. 100% COE & Visa Processing.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070D1E",
+  "theme_color": "#070D1E",
+  "orientation": "portrait-primary",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "/assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

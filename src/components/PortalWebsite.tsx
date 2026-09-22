@@ -1,6 +1,6 @@
 import React from 'react';
 import { JapaneseCorporateLanding } from './JapaneseCorporateLanding';
-import { Course, Trainer, LangMode } from '../types';
+import { Course, Trainer, LangMode, PortalMode } from '../types';
 
 interface PortalWebsiteProps {
   courses?: Course[];
@@ -10,6 +10,7 @@ interface PortalWebsiteProps {
   onOpenAdmission: (courseId?: string) => void;
   onOpenValidator: (certId?: string) => void;
   onSwitchToStudentPortal: (courseId: string) => void;
+  onSelectPortal?: (portal: PortalMode) => void;
 }
 
 export const PortalWebsite: React.FC<PortalWebsiteProps> = ({
@@ -19,7 +20,8 @@ export const PortalWebsite: React.FC<PortalWebsiteProps> = ({
   lang,
   onOpenAdmission,
   onOpenValidator,
-  onSwitchToStudentPortal
+  onSwitchToStudentPortal,
+  onSelectPortal
 }) => {
   return (
     <JapaneseCorporateLanding
@@ -30,6 +32,7 @@ export const PortalWebsite: React.FC<PortalWebsiteProps> = ({
       onOpenAdmission={onOpenAdmission}
       onOpenValidator={onOpenValidator}
       onSwitchToStudentPortal={onSwitchToStudentPortal}
+      onSelectPortal={onSelectPortal}
     />
   );
 };

@@ -61,18 +61,20 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#020617] text-slate-100 selection:bg-red-600 selection:text-white flex flex-col justify-between">
       
-      {/* 1. TOP HEADER & PORTAL NAVIGATION */}
-      <Header
-        currentPortal={currentPortal}
-        onSelectPortal={(p) => {
-          setCurrentPortal(p);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-        lang={lang}
-        onSelectLang={setLang}
-        onOpenAdmission={() => handleOpenAdmission()}
-        onOpenValidator={() => handleOpenValidator('DILS-CERT-2026-0048')}
-      />
+      {/* 1. TOP HEADER & PORTAL NAVIGATION (Rendered on LMS Portals: Student, Instructor, Gradebook, CRM) */}
+      {currentPortal !== 'website' && (
+        <Header
+          currentPortal={currentPortal}
+          onSelectPortal={(p) => {
+            setCurrentPortal(p);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          lang={lang}
+          onSelectLang={setLang}
+          onOpenAdmission={() => handleOpenAdmission()}
+          onOpenValidator={() => handleOpenValidator('DILS-CERT-2026-0048')}
+        />
+      )}
 
       {/* 2. PORTAL BODY VIEWPORT */}
       <main className="flex-1">
@@ -85,6 +87,10 @@ export default function App() {
             onOpenAdmission={handleOpenAdmission}
             onOpenValidator={handleOpenValidator}
             onSwitchToStudentPortal={handleSwitchToStudentPortal}
+            onSelectPortal={(p) => {
+              setCurrentPortal(p);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
           />
         )}
 
