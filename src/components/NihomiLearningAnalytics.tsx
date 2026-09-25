@@ -58,12 +58,12 @@ export const NihomiLearningAnalytics: React.FC<NihomiLearningAnalyticsProps> = (
   onOpenAdmission,
   onSwitchToStudentPortal
 }) => {
-  // Real-time simulated telemetry counters
-  const [totalKanjiMastered, setTotalKanjiMastered] = useState<number>(248935);
-  const [listeningHours, setListeningHours] = useState<number>(41249.2);
+  // Institutional Curriculum Benchmarks & Pedagogical Targets
+  const [totalKanjiMastered, setTotalKanjiMastered] = useState<number>(2480);
+  const [listeningHours, setListeningHours] = useState<number>(4120.0);
   const [retentionRate, setRetentionRate] = useState<number>(94.8);
-  const [activeSimulations, setActiveSimulations] = useState<number>(18496);
-  const [activeLearners, setActiveLearners] = useState<number>(784);
+  const [activeSimulations, setActiveSimulations] = useState<number>(1840);
+  const [activeLearners, setActiveLearners] = useState<number>(180);
   const [isPulsing, setIsPulsing] = useState<boolean>(false);
   const [drillSuccessMsg, setDrillSuccessMsg] = useState<string | null>(null);
 
@@ -73,37 +73,17 @@ export const NihomiLearningAnalytics: React.FC<NihomiLearningAnalyticsProps> = (
   // Secondary sub-tab for details
   const [activeSubTab, setActiveSubTab] = useState<'charts' | 'liveFeed' | 'srsScience'>('charts');
 
-  // Background timer to simulate active cloud sync & learning traffic
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTotalKanjiMastered(prev => prev + 1);
-      setListeningHours(prev => +(prev + 0.1).toFixed(1));
-      setIsPulsing(true);
-      setTimeout(() => setIsPulsing(false), 800);
-    }, 4500);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  // Periodic random shift in active learners
-  useEffect(() => {
-    const learnerTimer = setInterval(() => {
-      setActiveLearners(prev => prev + (Math.random() > 0.5 ? 1 : -1));
-    }, 8000);
-    return () => clearInterval(learnerTimer);
-  }, []);
-
-  // Interactive Kanji Drill click handler
+  // Interactive Kanji Drill demo click handler
   const handleSimulateDrill = () => {
     setTotalKanjiMastered(prev => prev + 5);
     setActiveSimulations(prev => prev + 1);
     setIsPulsing(true);
     setDrillSuccessMsg(
       lang === 'bn' 
-        ? '✅ ৫টি কাঞ্জি নিহোমি স্পেসড রিপিটেশন (SRS) অ্যালগরিদমে যুক্ত হয়েছে!'
+        ? '✅ ৫টি কাঞ্জি ডেমো স্পেসড রিপিটেশন (SRS) অ্যালগরিদমে টেস্ট করা হয়েছে!'
         : lang === 'jp'
-        ? '✅ 5文字の漢字がSRS反復アルゴリズムに記録されました！'
-        : '✅ 5 Kanji successfully logged into Nihomi SRS memory algorithm!'
+        ? '✅ 5文字の漢字がSRS反復アルゴリズムでテストされました！'
+        : '✅ 5 Kanji test run completed in Nihomi SRS memory algorithm!'
     );
     setTimeout(() => {
       setIsPulsing(false);

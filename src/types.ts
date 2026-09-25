@@ -246,3 +246,55 @@ export interface SRSReviewItem {
   retentionPercent: number;
 }
 
+export type UserRole = 
+  | 'FOUNDER' 
+  | 'ADMIN' 
+  | 'COUNSELOR' 
+  | 'TEACHER' 
+  | 'PROCESSING' 
+  | 'ACCOUNTS' 
+  | 'STUDENT' 
+  | 'PUBLIC';
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  phone?: string;
+  fullName: string;
+  role: UserRole;
+  status: 'active' | 'suspended';
+  studentId?: string;
+  avatarUrl?: string;
+  createdAt: string;
+}
+
+export interface SessionState {
+  user: AuthUser | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  actorId: string;
+  actorName: string;
+  action: string;
+  entityType: 'lead' | 'invoice' | 'student' | 'user' | 'enrollment';
+  entityId: string;
+  metadata?: Record<string, any>;
+  createdAt: string;
+}
+
+export interface DbTask {
+  id: string;
+  title: string;
+  owner: string;
+  priority: 'high' | 'medium' | 'low';
+  status: 'pending' | 'in_progress' | 'completed';
+  dueDate: string;
+  relatedLeadId?: string;
+  relatedStudentId?: string;
+  createdAt: string;
+}
+

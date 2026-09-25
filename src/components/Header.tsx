@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PortalMode, LangMode } from '../types';
+import { PortalMode, LangMode, AuthUser } from '../types';
 import { 
   Globe, 
   GraduationCap, 
@@ -10,7 +10,10 @@ import {
   PhoneCall, 
   Sparkles,
   Menu,
-  X
+  X,
+  Lock,
+  LogOut,
+  UserCheck
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -20,6 +23,9 @@ interface HeaderProps {
   onSelectLang: (lang: LangMode) => void;
   onOpenAdmission: () => void;
   onOpenValidator: () => void;
+  authUser: AuthUser | null;
+  onOpenLogin: (targetPortal?: PortalMode) => void;
+  onLogout: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -28,11 +34,53 @@ export const Header: React.FC<HeaderProps> = ({
   lang,
   onSelectLang,
   onOpenAdmission,
-  onOpenValidator
+  onOpenValidator,
+  authUser,
+  onOpenLogin,
+  onLogout
 }) => {
   const [dhakaTime, setDhakaTime] = useState<string>('');
   const [tokyoTime, setTokyoTime] = useState<string>('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+
+  // Check if a portal requires login and whether the current user is permitted
+  const handlePortalClick = (portal: PortalMode) => {
+    if (portal === 'website') {
+      onSelectPortal('website');
+      return;
+    }
+
+    if (!authUser) {
+      onOpenLogin(portal);
+      return;
+    }
+
+    // Role-based authorization
+    const role = authUser.role;
+    if (portal === 'admin') {
+      if (!['FOUNDER', 'ADMIN', 'COUNSELOR', 'ACCOUNTS'].includes(role)) {
+        alert('অ্যাক্সেস সংরক্ষিত: আপনার অ্যাকাউন্টে অ্যাডমিন CRM ব্যবহারের অনুমতি নেই।');
+        return;
+      }
+    } else if (portal === 'instructor') {
+      if (!['FOUNDER', 'ADMIN', 'TEACHER'].includes(role)) {
+        alert('অ্যাক্সেস সংরক্ষিত: শিক্ষক পোর্টালে প্রবেশের অনুমতি নেই।');
+        return;
+      }
+    } else if (portal === 'gradebook') {
+      if (!['FOUNDER', 'ADMIN', 'TEACHER', 'STUDENT'].includes(role)) {
+        alert('অ্যাক্সেস সংরক্ষিত: গ্রেডবুক অ্যাক্সেস সীমাবদ্ধ।');
+        return;
+      }
+    } else if (portal === 'student') {
+      if (!['FOUNDER', 'ADMIN', 'STUDENT'].includes(role)) {
+        alert('অ্যাক্সেস সংরক্ষিত: শিক্ষার্থী পোর্টালে প্রবেশের অনুমতি নেই।');
+        return;
+      }
+    }
+
+    onSelectPortal(portal);
+  };
 
   // Live real-time dual clocks
   useEffect(() => {
@@ -177,10 +225,12 @@ export const Header: React.FC<HeaderProps> = ({
           <nav className="hidden lg:flex items-center bg-slate-900/90 border border-slate-800 p-1 rounded-xl shadow-inner">
             {portals.map((p) => {
               const isActive = currentPortal === p.id;
+              const isLocked = p.id !== 'website' && !authUser;
+
               return (
                 <button
                   key={p.id}
-                  onClick={() => onSelectPortal(p.id)}
+                  onClick={() => handlePortalClick(p.id)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all relative ${
                     isActive
                       ? 'bg-red-600 text-white shadow-md'
@@ -189,7 +239,10 @@ export const Header: React.FC<HeaderProps> = ({
                 >
                   {p.icon}
                   <span>{lang === 'bn' ? p.labelBn : p.labelEn}</span>
-                  {p.badge && (
+                  {isLocked && (
+                    <Lock className="w-3 h-3 text-slate-500 ml-0.5" />
+                  )}
+                  {p.badge && !isLocked && (
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping ml-0.5"></span>
                   )}
                 </button>
@@ -197,8 +250,42 @@ export const Header: React.FC<HeaderProps> = ({
             })}
           </nav>
 
-          {/* Action CTAs: Direct Admission & Mobile toggle */}
-          <div className="flex items-center gap-2.5">
+          {/* Action CTAs: Auth State, Direct Admission & Mobile toggle */}
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            {/* Authenticated User Status or Sign-In Button */}
+            {authUser ? (
+              <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl text-xs">
+                <div className="flex items-center gap-1.5">
+                  <UserCheck className="w-4 h-4 text-emerald-400" />
+                  <div className="text-left hidden sm:block">
+                    <div className="text-[11px] font-bold text-white leading-tight truncate max-w-[120px]">
+                      {authUser.fullName.split(' ')[0]}
+                    </div>
+                    <div className="text-[9px] font-mono text-emerald-400 uppercase font-semibold">
+                      {authUser.role}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={onLogout}
+                  title="লগআউট করুন"
+                  className="p-1 hover:bg-slate-800 text-slate-400 hover:text-rose-400 rounded transition-colors ml-1"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => onOpenLogin()}
+                className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white text-xs font-semibold px-3 py-2 rounded-xl transition-all"
+              >
+                <Lock className="w-3.5 h-3.5 text-amber-400" />
+                <span className="hidden sm:inline">{lang === 'bn' ? 'স্টাফ ও শিক্ষার্থী লগইন' : 'Sign In'}</span>
+                <span className="sm:hidden">লগইন</span>
+              </button>
+            )}
+
             <button
               onClick={onOpenAdmission}
               className="flex items-center gap-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs sm:text-sm font-bold px-3.5 sm:px-4 py-2 rounded-xl shadow-lg shadow-red-950/40 transition-transform active:scale-95 whitespace-nowrap"
@@ -231,7 +318,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 key={p.id}
                 onClick={() => {
-                  onSelectPortal(p.id);
+                  handlePortalClick(p.id);
                   setMobileMenuOpen(false);
                 }}
                 className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold ${
@@ -244,6 +331,9 @@ export const Header: React.FC<HeaderProps> = ({
                   {p.icon}
                   <span>{lang === 'bn' ? p.labelBn : p.labelEn}</span>
                 </div>
+                {p.id !== 'website' && !authUser && (
+                  <Lock className="w-3.5 h-3.5 text-slate-500" />
+                )}
                 {p.badge && (
                   <span className="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-1.5 py-0.5 rounded">
                     {p.badge}
