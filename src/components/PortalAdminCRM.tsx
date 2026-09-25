@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Lead, Invoice, Course, LangMode } from '../types';
 import { 
   Building2, 
@@ -16,7 +16,24 @@ import {
   IdCard,
   Download,
   RotateCw,
-  Upload
+  Upload,
+  Clock,
+  AlertTriangle,
+  MessageSquare,
+  CalendarDays,
+  UserCheck,
+  FileText,
+  X,
+  Send,
+  History,
+  Eye,
+  ArrowUpRight,
+  CheckSquare,
+  Tag,
+  Filter,
+  Phone,
+  MapPin,
+  GraduationCap
 } from 'lucide-react';
 import html2canvas from 'html2canvas-pro';
 
@@ -25,17 +42,30 @@ interface PortalAdminCRMProps {
   invoices: Invoice[];
   courses: Course[];
   lang: LangMode;
+  onUpdateLeads?: (leads: Lead[]) => void;
+  onUpdateInvoices?: (invoices: Invoice[]) => void;
 }
 
 export const PortalAdminCRM: React.FC<PortalAdminCRMProps> = ({
   leads: initialLeads,
   invoices: initialInvoices,
   courses,
-  lang
+  lang,
+  onUpdateLeads,
+  onUpdateInvoices
 }) => {
   const [activeTab, setActiveTab] = useState<'crm' | 'finance' | 'batches' | 'idStudio'>('crm');
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
   const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
+
+  // Sync state with parent props when they update from external admissions
+  useEffect(() => {
+    setLeads(initialLeads);
+  }, [initialLeads]);
+
+  useEffect(() => {
+    setInvoices(initialInvoices);
+  }, [initialInvoices]);
 
   // Quick new lead state
   const [newLeadName, setNewLeadName] = useState('');
@@ -52,6 +82,70 @@ export const PortalAdminCRM: React.FC<PortalAdminCRMProps> = ({
   const [cardPhoto, setCardPhoto] = useState('https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&auto=format&fit=crop&q=80');
   const [isFlipped, setIsFlipped] = useState(false);
 
+  // Student 360 & Counselor Call Logger state
+  const [selectedLeadFor360, setSelectedLeadFor360] = useState<Lead | null>(null);
+  const [callOutcome, setCallOutcome] = useState<string>('আগ্রহী ও ভর্তি হতে প্রস্তুত');
+  const [callPriority, setCallPriority] = useState<'high' | 'medium' | 'low'>('medium');
+  const [callNote, setCallNote] = useState<string>('');
+  const [nextFollowUpSchedule, setNextFollowUpSchedule] = useState<string>('Tomorrow, 11:00 AM');
+  const [isSavingCall, setIsSavingCall] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [counselorFilter, setCounselorFilter] = useState<string>('All');
+  const [queueFilter, setQueueFilter] = useState<'all' | 'dueToday' | 'urgent'>('all');
+
+  const handleOpen360 = (lead: Lead) => {
+    setSelectedLeadFor360(lead);
+    setCallOutcome(lead.lastCallOutcome || 'আগ্রহী ও ভর্তি হতে প্রস্তুত');
+    setCallPriority(lead.priority || 'medium');
+    setNextFollowUpSchedule(lead.nextFollowUp || 'Tomorrow, 11:00 AM');
+    setCallNote('');
+  };
+
+  const handleSaveCallLog = async () => {
+    if (!selectedLeadFor360) return;
+    setIsSavingCall(true);
+
+    const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+    const formattedNote = `[${dateStr} ${timeStr}] কল ফলাফল: ${callOutcome}. ${callNote ? `নোট: ${callNote}.` : ''} পরবর্তী ফলোআপ: ${nextFollowUpSchedule}`;
+
+    const updatedNotes = [...selectedLeadFor360.notes, formattedNote];
+    const updatedLead: Lead = {
+      ...selectedLeadFor360,
+      stage: selectedLeadFor360.stage === 'new' ? 'counseling' : selectedLeadFor360.stage,
+      notes: updatedNotes,
+      nextFollowUp: nextFollowUpSchedule,
+      lastCallOutcome: callOutcome,
+      priority: callPriority
+    };
+
+    const updatedLeads = leads.map(l => l.id === updatedLead.id ? updatedLead : l);
+    setLeads(updatedLeads);
+    setSelectedLeadFor360(updatedLead);
+    if (onUpdateLeads) onUpdateLeads(updatedLeads);
+
+    try {
+      await fetch(`/api/leads/${updatedLead.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          stage: updatedLead.stage,
+          note: formattedNote,
+          nextFollowUp: nextFollowUpSchedule,
+          lastCallOutcome: callOutcome,
+          priority: callPriority
+        })
+      });
+    } catch (err) {
+      console.warn('Backend sync deferred:', err);
+    }
+
+    setIsSavingCall(false);
+    setCallNote('');
+    setLeadSuccessMsg(`কল লগ সংরক্ষিত ও সার্ভারের সাথে সিনক্রোনাইজ হয়েছে! (${updatedLead.name})`);
+    setTimeout(() => setLeadSuccessMsg(null), 3500);
+  };
+
   // Financial summary
   const totalRevenue = invoices.reduce((acc, curr) => acc + curr.totalAmount, 0);
   const totalCollected = invoices.reduce((acc, curr) => acc + curr.paidAmount, 0);
@@ -59,26 +153,48 @@ export const PortalAdminCRM: React.FC<PortalAdminCRMProps> = ({
 
   // Move lead stage
   const updateLeadStage = (leadId: string, newStage: 'new' | 'counseling' | 'enrolled') => {
-    setLeads((prev) =>
-      prev.map((l) => (l.id === leadId ? { ...l, stage: newStage } : l))
-    );
+    const updated = leads.map((l) => (l.id === leadId ? { ...l, stage: newStage } : l));
+    setLeads(updated);
+    if (onUpdateLeads) onUpdateLeads(updated);
   };
 
   // Convert lead to enrolled student
   const handleEnrollLead = (lead: Lead) => {
     const generatedStudentId = `DILS-2026-${Math.floor(1000 + Math.random() * 9000)}`;
-    setLeads((prev) =>
-      prev.map((l) =>
-        l.id === lead.id
-          ? {
-              ...l,
-              stage: 'enrolled',
-              notes: [...l.notes, `অফিসিয়াল ভর্তি সম্পন্ন। Student ID: ${generatedStudentId} বরাদ্দ করা হয়েছে।`]
-            }
-          : l
-      )
+    const updatedLeads = leads.map((l) =>
+      l.id === lead.id
+        ? {
+            ...l,
+            stage: 'enrolled' as const,
+            notes: [...l.notes, `অফিসিয়াল ভর্তি সম্পন্ন। Student ID: ${generatedStudentId} বরাদ্দ করা হয়েছে।`]
+          }
+        : l
     );
-    setLeadSuccessMsg(`শিক্ষার্থী সফলভাবে ভর্তি করা হয়েছে! ইউনিক স্টুডেন্ট আইডি: ${generatedStudentId}`);
+    setLeads(updatedLeads);
+    if (onUpdateLeads) onUpdateLeads(updatedLeads);
+
+    // Auto-create initial tuition invoice for student
+    const newInvoice: Invoice = {
+      id: `inv-${Date.now()}`,
+      invoiceNo: `DILS-INV-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+      studentName: lead.name,
+      studentId: generatedStudentId,
+      courseName: lead.courseInterest,
+      totalAmount: 12000,
+      paidAmount: 7000,
+      dueAmount: 5000,
+      status: 'partial',
+      dueDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+      installments: [
+        { title: '1st Installment (At Admission)', amount: 7000, paid: true, paidDate: new Date().toISOString().split('T')[0] },
+        { title: '2nd Installment (After 45 Days)', amount: 5000, paid: false }
+      ]
+    };
+    const updatedInvoices = [newInvoice, ...invoices];
+    setInvoices(updatedInvoices);
+    if (onUpdateInvoices) onUpdateInvoices(updatedInvoices);
+
+    setLeadSuccessMsg(`শিক্ষার্থী সফলভাবে ভর্তি করা হয়েছে! ইউনিক স্টুডেন্ট আইডি: ${generatedStudentId} ও চালান অন্তর্ভুক্ত হয়েছে।`);
     setTimeout(() => setLeadSuccessMsg(null), 4000);
   };
 
@@ -99,7 +215,9 @@ export const PortalAdminCRM: React.FC<PortalAdminCRMProps> = ({
       nextFollowUp: 'Tomorrow',
       notes: ['সরাসরি ওয়েব লিড থেকে যুক্ত করা হয়েছে।']
     };
-    setLeads([newEntry, ...leads]);
+    const updated = [newEntry, ...leads];
+    setLeads(updated);
+    if (onUpdateLeads) onUpdateLeads(updated);
     setNewLeadName('');
     setNewLeadPhone('');
     setLeadSuccessMsg('নতুন লিড CRM পাইপলাইনে যুক্ত করা হয়েছে!');
@@ -136,6 +254,42 @@ export const PortalAdminCRM: React.FC<PortalAdminCRMProps> = ({
       console.error('ID Card download error:', err);
     }
   };
+
+  // Counselor and Queue filters
+  const counselorsList = Array.from(new Set(leads.map(l => l.assignedCounselor).filter(Boolean)));
+
+  const todayQueue = leads.filter(l => {
+    if (l.stage === 'enrolled') return false;
+    const lowerFollowUp = (l.nextFollowUp || '').toLowerCase();
+    const isToday = lowerFollowUp.includes('today') || lowerFollowUp.includes('আজ');
+    const isTomorrow = lowerFollowUp.includes('tomorrow') || lowerFollowUp.includes('কাল');
+    const isHigh = l.priority === 'high';
+    return isToday || isTomorrow || isHigh || l.stage === 'new';
+  });
+
+  const urgentCount = leads.filter(l => l.stage !== 'enrolled' && (l.priority === 'high' || l.stage === 'new')).length;
+
+  const filteredLeads = leads.filter(l => {
+    const q = searchQuery.toLowerCase().trim();
+    const matchesSearch = !q || 
+      l.name.toLowerCase().includes(q) ||
+      l.phone.includes(q) ||
+      l.courseInterest.toLowerCase().includes(q) ||
+      (l.city && l.city.toLowerCase().includes(q));
+
+    const matchesCounselor = counselorFilter === 'All' || l.assignedCounselor.includes(counselorFilter);
+
+    if (!matchesSearch || !matchesCounselor) return false;
+
+    if (queueFilter === 'dueToday') {
+      const lower = (l.nextFollowUp || '').toLowerCase();
+      return l.stage !== 'enrolled' && (lower.includes('today') || lower.includes('tomorrow') || lower.includes('আজ') || lower.includes('কাল'));
+    }
+    if (queueFilter === 'urgent') {
+      return l.stage !== 'enrolled' && (l.priority === 'high' || l.stage === 'new');
+    }
+    return true;
+  });
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
@@ -194,31 +348,50 @@ export const PortalAdminCRM: React.FC<PortalAdminCRMProps> = ({
 
         {/* Global Financial & Lead Metric Counters */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-          <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+          <div 
+            onClick={() => { setActiveTab('crm'); setQueueFilter('all'); }}
+            className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 cursor-pointer hover:border-slate-700 transition-colors"
+          >
             <span className="text-slate-400 block mb-1">মোট সম্ভাব্য লিড</span>
             <div className="text-xl font-black text-white font-mono">{leads.length} জন</div>
           </div>
 
-          <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+          <div 
+            onClick={() => { setActiveTab('crm'); setQueueFilter('dueToday'); }}
+            className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+              queueFilter === 'dueToday' 
+                ? 'bg-amber-950/40 border-amber-500 shadow-lg' 
+                : 'bg-slate-950 border-amber-900/50 hover:border-amber-600/70'
+            }`}
+          >
+            <span className="text-amber-400 font-semibold block mb-1 flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5 text-amber-400" />
+              আজকের অ্যাকশন কিউ
+            </span>
+            <div className="text-xl font-black text-amber-300 font-mono">{todayQueue.length} জনের কল বাকি</div>
+          </div>
+
+          <div 
+            onClick={() => setActiveTab('finance')}
+            className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 cursor-pointer hover:border-slate-700 transition-colors"
+          >
             <span className="text-slate-400 block mb-1">মোট আদায়কৃত ফি</span>
             <div className="text-xl font-black text-emerald-400 font-mono">৳{totalCollected.toLocaleString()}</div>
           </div>
 
-          <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+          <div 
+            onClick={() => setActiveTab('finance')}
+            className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 cursor-pointer hover:border-slate-700 transition-colors"
+          >
             <span className="text-slate-400 block mb-1">বকেয়া ফি (Due)</span>
             <div className="text-xl font-black text-amber-400 font-mono">৳{totalDue.toLocaleString()}</div>
-          </div>
-
-          <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
-            <span className="text-slate-400 block mb-1">সক্রিয় ব্যাচ</span>
-            <div className="text-xl font-black text-red-400 font-mono">৬টি ব্যাচ</div>
           </div>
         </div>
       </div>
 
       {leadSuccessMsg && (
-        <div className="bg-emerald-950/80 border border-emerald-500 text-emerald-200 px-4 py-3 rounded-xl text-xs font-semibold flex items-center gap-2">
-          <CheckCircle className="w-4 h-4 text-emerald-400" />
+        <div className="bg-emerald-950/80 border border-emerald-500 text-emerald-200 px-4 py-3 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-lg animate-in fade-in duration-200">
+          <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{leadSuccessMsg}</span>
         </div>
       )}
@@ -227,6 +400,157 @@ export const PortalAdminCRM: React.FC<PortalAdminCRMProps> = ({
       {activeTab === 'crm' && (
         <div className="space-y-6">
           
+          {/* Counselor & Pipeline Search & Filter Bar */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 text-xs">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="প্রার্থীর নাম, মোবাইল নম্বর, বা কোর্স দিয়ে খুঁজুন..."
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-9 pr-8 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-red-500 text-xs"
+              />
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-2.5 text-slate-400 hover:text-white"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Counselor Filter */}
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400 flex items-center gap-1 font-semibold whitespace-nowrap">
+                <Filter className="w-3.5 h-3.5" />
+                কাউন্সেলর:
+              </span>
+              <select
+                value={counselorFilter}
+                onChange={(e) => setCounselorFilter(e.target.value)}
+                className="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-red-500"
+              >
+                <option value="All">সকল শিক্ষক ও কাউন্সেলর</option>
+                {counselorsList.map((c, i) => (
+                  <option key={i} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Quick Filter Segmented Pills */}
+            <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+              <button
+                onClick={() => setQueueFilter('all')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                  queueFilter === 'all' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                সকল ({leads.length})
+              </button>
+              <button
+                onClick={() => setQueueFilter('dueToday')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
+                  queueFilter === 'dueToday' ? 'bg-amber-600 text-white' : 'text-amber-400 hover:text-amber-300'
+                }`}
+              >
+                <Clock className="w-3 h-3" />
+                আজকের কল ({todayQueue.length})
+              </button>
+              <button
+                onClick={() => setQueueFilter('urgent')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
+                  queueFilter === 'urgent' ? 'bg-red-600 text-white' : 'text-red-400 hover:text-red-300'
+                }`}
+              >
+                <AlertTriangle className="w-3 h-3" />
+                জরুরি ({urgentCount})
+              </button>
+            </div>
+          </div>
+
+          {/* Priority Today's Follow-up Action Queue */}
+          <div className="bg-gradient-to-r from-amber-950/40 via-slate-900 to-slate-900 border border-amber-900/60 rounded-2xl p-5 shadow-xl space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-amber-500/20 text-amber-400">
+                  <PhoneCall className="w-4 h-4" />
+                </span>
+                <div>
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    আজকের অ্যাকশন কিউ — জরুরি ফলোআপ ও কল লিস্ট
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      {todayQueue.length} Pending
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-slate-400">
+                    আজ যাদের সাথে কথা বলা, ক্যাম্পাস ভিজিট শিডিউল করা বা কোর্স ফি ফলোআপ করা প্রয়োজন।
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {todayQueue.length === 0 ? (
+              <div className="bg-slate-950/80 rounded-xl p-4 text-center text-slate-400 text-xs">
+                🎉 আজকের জন্য কোনো অতিরিক্ত কল বা ফলোআপ বাকি নেই!
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+                {todayQueue.map(lead => (
+                  <div 
+                    key={lead.id} 
+                    className="bg-slate-950/90 border border-amber-900/40 hover:border-amber-600/60 rounded-xl p-3 space-y-2 text-xs transition-all shadow-md"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <strong className="text-white font-bold text-sm block">{lead.name}</strong>
+                        <span className="text-[10px] text-slate-400">{lead.courseInterest}</span>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        lead.priority === 'high' 
+                          ? 'bg-red-950 text-red-400 border border-red-800' 
+                          : 'bg-amber-950 text-amber-300 border border-amber-800'
+                      }`}>
+                        {lead.priority === 'high' ? 'জরুরি' : 'আজকের কল'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] text-slate-300 bg-slate-900/80 px-2.5 py-1.5 rounded-lg font-mono">
+                      <span className="text-emerald-400 font-semibold">{lead.phone}</span>
+                      <span className="text-amber-400 text-[10px]">{lead.nextFollowUp}</span>
+                    </div>
+
+                    {lead.lastCallOutcome && (
+                      <div className="text-[10px] text-slate-400 flex items-center gap-1">
+                        <span className="text-slate-500">পূর্বের অবস্থা:</span>
+                        <span className="text-amber-300 font-medium truncate">{lead.lastCallOutcome}</span>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-2 pt-1 border-t border-slate-900">
+                      <a
+                        href={`tel:${lead.phone}`}
+                        className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-center flex items-center justify-center gap-1 text-[11px] shadow transition-transform active:scale-95"
+                      >
+                        <Phone className="w-3 h-3" />
+                        <span>সরাসরি কল</span>
+                      </a>
+                      <button
+                        onClick={() => handleOpen360(lead)}
+                        className="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold rounded-lg text-center flex items-center justify-center gap-1 text-[11px] border border-slate-700 shadow"
+                      >
+                        <Eye className="w-3 h-3" />
+                        <span>Student 360</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Quick Add Lead Form */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
             <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-3 flex items-center gap-1.5">
@@ -281,30 +605,51 @@ export const PortalAdminCRM: React.FC<PortalAdminCRMProps> = ({
                   নতুন লিড (New Inquiries)
                 </span>
                 <span className="text-xs font-mono font-bold text-slate-400 bg-slate-950 px-2 py-0.5 rounded">
-                  {leads.filter((l) => l.stage === 'new').length}
+                  {filteredLeads.filter((l) => l.stage === 'new').length}
                 </span>
               </div>
 
               <div className="space-y-3">
-                {leads
+                {filteredLeads
                   .filter((l) => l.stage === 'new')
                   .map((lead) => (
-                    <div key={lead.id} className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2 text-xs">
+                    <div key={lead.id} className="bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl p-3.5 space-y-2 text-xs transition-all shadow">
                       <div className="flex items-center justify-between">
                         <strong className="text-white text-sm">{lead.name}</strong>
                         <span className="text-[10px] text-slate-500">{lead.createdAt}</span>
                       </div>
 
-                      <div className="text-emerald-400 font-mono font-semibold flex items-center gap-1">
-                        <PhoneCall className="w-3 h-3" />
-                        {lead.phone}
+                      <div className="text-emerald-400 font-mono font-semibold flex items-center justify-between">
+                        <span className="flex items-center gap-1">
+                          <PhoneCall className="w-3 h-3" />
+                          {lead.phone}
+                        </span>
+                        {lead.priority === 'high' && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] bg-red-950 text-red-400 border border-red-800 font-bold">
+                            জরুরি
+                          </span>
+                        )}
                       </div>
 
                       <div className="text-slate-300 text-[11px] bg-slate-900 p-2 rounded">
                         কোর্স: <strong className="text-amber-400">{lead.courseInterest}</strong>
                       </div>
 
-                      <div className="flex justify-end gap-1.5 pt-2 border-t border-slate-900">
+                      {lead.lastCallOutcome && (
+                        <div className="text-[10px] text-slate-400 italic bg-slate-900/50 p-1.5 rounded">
+                          অবস্থা: <span className="text-amber-300">{lead.lastCallOutcome}</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-slate-900">
+                        <button
+                          onClick={() => handleOpen360(lead)}
+                          className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded text-[11px] flex items-center gap-1 border border-slate-700"
+                        >
+                          <Eye className="w-3 h-3 text-amber-400" />
+                          <span>360 ভিউ</span>
+                        </button>
+
                         <button
                           onClick={() => updateLeadStage(lead.id, 'counseling')}
                           className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded text-[11px] flex items-center gap-1"
@@ -326,37 +671,51 @@ export const PortalAdminCRM: React.FC<PortalAdminCRMProps> = ({
                   কাউন্সেলিং চলছে (Counseling)
                 </span>
                 <span className="text-xs font-mono font-bold text-slate-400 bg-slate-950 px-2 py-0.5 rounded">
-                  {leads.filter((l) => l.stage === 'counseling').length}
+                  {filteredLeads.filter((l) => l.stage === 'counseling').length}
                 </span>
               </div>
 
               <div className="space-y-3">
-                {leads
+                {filteredLeads
                   .filter((l) => l.stage === 'counseling')
                   .map((lead) => (
-                    <div key={lead.id} className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2 text-xs">
+                    <div key={lead.id} className="bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl p-3.5 space-y-2 text-xs transition-all shadow">
                       <div className="flex items-center justify-between">
                         <strong className="text-white text-sm">{lead.name}</strong>
-                        <span className="text-[10px] text-amber-400">ফলোআপ: {lead.nextFollowUp}</span>
+                        <span className="text-[10px] text-amber-400 font-medium">ফলোআপ: {lead.nextFollowUp}</span>
                       </div>
 
-                      <div className="text-emerald-400 font-mono font-semibold flex items-center gap-1">
-                        <PhoneCall className="w-3 h-3" />
-                        {lead.phone}
+                      <div className="text-emerald-400 font-mono font-semibold flex items-center justify-between">
+                        <span className="flex items-center gap-1">
+                          <PhoneCall className="w-3 h-3" />
+                          {lead.phone}
+                        </span>
+                        {lead.lastCallOutcome && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] bg-amber-950/80 text-amber-300 border border-amber-800">
+                            {lead.lastCallOutcome.split(' ')[0]}
+                          </span>
+                        )}
                       </div>
 
-                      <p className="text-[11px] text-slate-400 italic">
+                      <p className="text-[11px] text-slate-400 italic bg-slate-900/60 p-2 rounded">
                         "{lead.notes[lead.notes.length - 1]}"
                       </p>
 
                       <div className="flex justify-between items-center gap-1.5 pt-2 border-t border-slate-900">
-                        <span className="text-[10px] text-slate-500">কাউন্সেলর: {lead.assignedCounselor}</span>
+                        <button
+                          onClick={() => handleOpen360(lead)}
+                          className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded text-[11px] flex items-center gap-1 border border-slate-700"
+                        >
+                          <Eye className="w-3 h-3 text-amber-400" />
+                          <span>360 ও কল লগ</span>
+                        </button>
+
                         <button
                           onClick={() => handleEnrollLead(lead)}
                           className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded text-[11px] flex items-center gap-1 shadow"
                         >
                           <Sparkles className="w-3 h-3 text-amber-300" />
-                          <span>ভর্তি নিশ্চিত করুন</span>
+                          <span>ভর্তি নিশ্চিত</span>
                         </button>
                       </div>
                     </div>
@@ -372,12 +731,12 @@ export const PortalAdminCRM: React.FC<PortalAdminCRMProps> = ({
                   ভর্তি সম্পন্ন (Enrolled)
                 </span>
                 <span className="text-xs font-mono font-bold text-emerald-400 bg-slate-950 px-2 py-0.5 rounded">
-                  {leads.filter((l) => l.stage === 'enrolled').length}
+                  {filteredLeads.filter((l) => l.stage === 'enrolled').length}
                 </span>
               </div>
 
               <div className="space-y-3">
-                {leads
+                {filteredLeads
                   .filter((l) => l.stage === 'enrolled')
                   .map((lead) => (
                     <div key={lead.id} className="bg-slate-950 border border-emerald-900/50 rounded-xl p-3.5 space-y-2 text-xs">
@@ -395,6 +754,16 @@ export const PortalAdminCRM: React.FC<PortalAdminCRMProps> = ({
                       <div className="text-[11px] text-slate-400 bg-slate-900 p-2 rounded">
                         {lead.notes[lead.notes.length - 1]}
                       </div>
+
+                      <div className="flex justify-end pt-1">
+                        <button
+                          onClick={() => handleOpen360(lead)}
+                          className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded text-[11px] flex items-center gap-1 border border-slate-700"
+                        >
+                          <Eye className="w-3 h-3 text-emerald-400" />
+                          <span>Student 360</span>
+                        </button>
+                      </div>
                     </div>
                   ))}
               </div>
@@ -402,6 +771,253 @@ export const PortalAdminCRM: React.FC<PortalAdminCRMProps> = ({
 
           </div>
 
+        </div>
+      )}
+
+      {/* 3. STUDENT 360 SLIDE-OVER DRAWER & CALL LOGGER */}
+      {selectedLeadFor360 && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex justify-end animate-in fade-in duration-200">
+          <div className="w-full max-w-2xl bg-slate-900 border-l border-slate-800 h-full overflow-y-auto p-6 space-y-6 shadow-2xl flex flex-col justify-between">
+            
+            <div className="space-y-6">
+              {/* Drawer Header */}
+              <div className="flex items-start justify-between pb-4 border-b border-slate-800">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                      selectedLeadFor360.stage === 'enrolled' 
+                        ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' 
+                        : selectedLeadFor360.stage === 'counseling'
+                        ? 'bg-amber-950 text-amber-300 border border-amber-800'
+                        : 'bg-blue-950 text-blue-400 border border-blue-800'
+                    }`}>
+                      {selectedLeadFor360.stage === 'enrolled' ? 'Enrolled Student' : selectedLeadFor360.stage === 'counseling' ? 'In Counseling' : 'New Inquired Lead'}
+                    </span>
+                    <span className="text-[10px] text-slate-500 font-mono">ID: {selectedLeadFor360.id}</span>
+                  </div>
+                  <h3 className="text-xl font-black text-white">{selectedLeadFor360.name}</h3>
+                  <p className="text-xs text-slate-400">{selectedLeadFor360.courseInterest}</p>
+                </div>
+
+                <button
+                  onClick={() => setSelectedLeadFor360(null)}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Quick Action Contact Strip */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                <a
+                  href={`tel:${selectedLeadFor360.phone}`}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-2.5 rounded-xl flex items-center justify-center gap-1.5 shadow transition-transform active:scale-95"
+                >
+                  <Phone className="w-3.5 h-3.5" />
+                  <span>ফোন দিন</span>
+                </a>
+                <a
+                  href={`https://wa.me/${selectedLeadFor360.phone.replace(/[^0-9]/g, '')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="bg-emerald-950 border border-emerald-800 hover:bg-emerald-900 text-emerald-300 font-bold p-2.5 rounded-xl flex items-center justify-center gap-1.5 shadow"
+                >
+                  <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>WhatsApp</span>
+                </a>
+                <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-slate-300 font-mono text-[11px] truncate flex items-center justify-center">
+                  {selectedLeadFor360.phone}
+                </div>
+                <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-slate-400 text-[11px] truncate flex items-center justify-center gap-1">
+                  <MapPin className="w-3 h-3 text-red-400 shrink-0" />
+                  <span>{selectedLeadFor360.city || 'Dhaka'}</span>
+                </div>
+              </div>
+
+              {/* Student Profile Snapshot */}
+              <div className="bg-slate-950 rounded-xl p-4 border border-slate-800 space-y-3 text-xs">
+                <h4 className="font-bold text-white text-xs uppercase tracking-wider flex items-center gap-1.5 text-slate-400">
+                  <GraduationCap className="w-4 h-4 text-red-400" />
+                  একাডেমিক প্রোফাইল ও টার্গেট
+                </h4>
+                <div className="grid grid-cols-2 gap-3 text-slate-300">
+                  <div>
+                    <span className="text-slate-500 block text-[11px]">শিক্ষাগত যোগ্যতা:</span>
+                    <strong className="text-white">{selectedLeadFor360.education || 'HSC Passed'}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[11px]">টার্গেট ইনটেক:</span>
+                    <strong className="text-amber-400">{selectedLeadFor360.targetIntake || 'Next Intake'}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[11px]">বর্তমান ফলোআপ শিডিউল:</span>
+                    <strong className="text-emerald-400">{selectedLeadFor360.nextFollowUp}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[11px]">দায়িত্বপ্রাপ্ত কাউন্সেলর:</span>
+                    <strong className="text-white">{selectedLeadFor360.assignedCounselor}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Interactive Call Logger & Note Updater */}
+              <div className="bg-gradient-to-br from-slate-950 to-slate-900 rounded-xl p-4 border border-red-900/40 space-y-3 text-xs">
+                <h4 className="font-bold text-white text-xs uppercase tracking-wider flex items-center gap-1.5 text-red-400">
+                  <PhoneCall className="w-4 h-4" />
+                  কাউন্সেলর কল লগার ও ফলোআপ শিডিউল (Call Logger)
+                </h4>
+
+                {/* Call Outcome Select */}
+                <div>
+                  <label className="block text-slate-400 text-[11px] mb-1 font-semibold">কল ফলাফল (Call Outcome):</label>
+                  <select
+                    value={callOutcome}
+                    onChange={(e) => setCallOutcome(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-xs focus:outline-none focus:border-red-500"
+                  >
+                    <option value="আগ্রহী ও ভর্তি হতে প্রস্তুত">🟢 আগ্রহী ও ভর্তি হতে প্রস্তুত (Interested & Ready)</option>
+                    <option value="ক্যাম্পাস ভিজিট ও ডেমো ক্লাস শিডিউলড">🟡 ক্যাম্পাস ভিজিট ও ডেমো ক্লাস শিডিউলড</option>
+                    <option value="অভিভাবক ও স্পন্সরের সাথে কথা বলতে হবে">🔵 অভিভাবক ও স্পন্সরের সাথে কথা বলতে হবে</option>
+                    <option value="ফোন ধরেনি / ব্যস্ত ছিল (No Answer)">🟠 ফোন ধরেনি / ব্যস্ত ছিল (No Answer)</option>
+                    <option value="ফি নিয়ে ভাবছে / পরবর্তী ইনটেকে ইচ্ছুক">🟣 ফি নিয়ে ভাবছে / পরবর্তী ইনটেকে ইচ্ছুক</option>
+                    <option value="আগ্রহী নয় / ভুল নম্বর (Not Interested)">🔴 আগ্রহী নয় / ভুল নম্বর (Not Interested)</option>
+                  </select>
+                </div>
+
+                {/* Priority Selection */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-400 text-[11px] mb-1 font-semibold">অগ্রাধিকার (Priority):</label>
+                    <select
+                      value={callPriority}
+                      onChange={(e) => setCallPriority(e.target.value as any)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-xs focus:outline-none focus:border-red-500"
+                    >
+                      <option value="high">🔴 High (জরুরি ফলোআপ)</option>
+                      <option value="medium">🟡 Medium (স্বাভাবিক)</option>
+                      <option value="low">🟢 Low (পরবর্তীতে)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-400 text-[11px] mb-1 font-semibold">পরবর্তী ফলোআপ শিডিউল:</label>
+                    <input
+                      type="text"
+                      value={nextFollowUpSchedule}
+                      onChange={(e) => setNextFollowUpSchedule(e.target.value)}
+                      placeholder="e.g. Tomorrow, 11:00 AM"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-xs focus:outline-none focus:border-red-500 font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* Quick Schedule Pills */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[10px] text-slate-500">কুইক শিডিউল:</span>
+                  {[
+                    'আজ বিকেল ৪টা',
+                    'Tomorrow, 11:00 AM',
+                    '৩ দিন পর (বৃহস্পতি)',
+                    'পরবর্তী সপ্তাহ'
+                  ].map((preset, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setNextFollowUpSchedule(preset)}
+                      className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]"
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Note TextArea */}
+                <div>
+                  <label className="block text-slate-400 text-[11px] mb-1 font-semibold">আলোচনার বিস্তারিত নোট লিখুন:</label>
+                  <textarea
+                    rows={2}
+                    value={callNote}
+                    onChange={(e) => setCallNote(e.target.value)}
+                    placeholder="প্রার্থীর সাথে কী কথা হলো, কোনো বিশেষ রিকোয়ারমেন্ট বা প্রশ্নের বিবরণ লিখুন..."
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-xs focus:outline-none focus:border-red-500 placeholder-slate-600"
+                  />
+                </div>
+
+                {/* Save Button */}
+                <button
+                  type="button"
+                  onClick={handleSaveCallLog}
+                  disabled={isSavingCall}
+                  className="w-full py-2.5 bg-red-600 hover:bg-red-500 disabled:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow transition-all active:scale-98"
+                >
+                  <CheckSquare className="w-4 h-4" />
+                  <span>{isSavingCall ? 'সার্ভারে সংরক্ষণ হচ্ছে...' : '💾 কল লগ ও শিডিউল সংরক্ষণ করুন (Sync to Server)'}</span>
+                </button>
+              </div>
+
+              {/* Complete Interaction History Timeline */}
+              <div className="space-y-2 text-xs">
+                <h4 className="font-bold text-white text-xs uppercase tracking-wider flex items-center gap-1.5 text-slate-400">
+                  <History className="w-4 h-4 text-amber-400" />
+                  পূর্ববর্তী কাউন্সেলিং ও কল হিস্ট্রি ({selectedLeadFor360.notes.length})
+                </h4>
+
+                <div className="bg-slate-950 rounded-xl p-3 border border-slate-800 space-y-2 max-h-52 overflow-y-auto">
+                  {selectedLeadFor360.notes.slice().reverse().map((noteText, idx) => (
+                    <div key={idx} className="p-2.5 bg-slate-900 rounded-lg border border-slate-800/80 text-[11px] space-y-1">
+                      <div className="flex items-center justify-between text-slate-500 text-[10px]">
+                        <span className="font-semibold text-slate-400">অ্যাক্টিভিটি #{selectedLeadFor360.notes.length - idx}</span>
+                        <span>{idx === 0 ? 'সর্বশেষ নোট' : 'পূর্ববর্তী'}</span>
+                      </div>
+                      <p className="text-slate-200">{noteText}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Stage Control Actions */}
+            <div className="pt-4 border-t border-slate-800 flex items-center justify-between gap-3">
+              {selectedLeadFor360.stage === 'new' && (
+                <button
+                  onClick={() => {
+                    updateLeadStage(selectedLeadFor360.id, 'counseling');
+                    setSelectedLeadFor360(prev => prev ? { ...prev, stage: 'counseling' } : null);
+                  }}
+                  className="py-2 px-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow"
+                >
+                  <span>কাউন্সেলিং এ স্থানান্তর করুন</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
+
+              {selectedLeadFor360.stage !== 'enrolled' ? (
+                <button
+                  onClick={() => {
+                    handleEnrollLead(selectedLeadFor360);
+                    setSelectedLeadFor360(null);
+                  }}
+                  className="py-2 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow ml-auto"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  <span>ভর্তি নিশ্চিত করুন (Create ID & Invoice)</span>
+                </button>
+              ) : (
+                <span className="text-xs text-emerald-400 font-bold flex items-center gap-1">
+                  <CheckCircle className="w-4 h-4" />
+                  এই শিক্ষার্থীর ভর্তি প্রক্রিয়া ইতিমধ্যে সম্পন্ন হয়েছে।
+                </span>
+              )}
+
+              <button
+                onClick={() => setSelectedLeadFor360(null)}
+                className="py-2 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold"
+              >
+                বন্ধ করুন
+              </button>
+            </div>
+
+          </div>
         </div>
       )}
 

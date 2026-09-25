@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PortalMode, LangMode } from './types';
+import { PortalMode, LangMode, Lead, Invoice } from './types';
 import { Header } from './components/Header';
 import { PortalWebsite } from './components/PortalWebsite';
 import { PortalStudent } from './components/PortalStudent';
@@ -32,16 +32,147 @@ export default function App() {
   const [isValidatorOpen, setIsValidatorOpen] = useState(false);
   const [validatorCertId, setValidatorCertId] = useState<string>('DILS-CERT-2026-0048');
 
-  // Shared state
+  // Shared state with browser persistence and server sync
   const [courses] = useState(INITIAL_COURSES);
   const [lessons] = useState(INITIAL_LESSONS);
   const [quizQuestions] = useState(INITIAL_QUIZ_QUESTIONS);
   const [gradebook] = useState(INITIAL_GRADEBOOK);
   const [certificates] = useState(INITIAL_CERTIFICATES);
-  const [leads, setLeads] = useState(INITIAL_LEADS);
-  const [invoices] = useState(INITIAL_INVOICES);
+  const [leads, setLeads] = useState<Lead[]>(() => {
+    try {
+      const saved = localStorage.getItem('dils_leads_v1');
+      return saved ? JSON.parse(saved) : INITIAL_LEADS;
+    } catch {
+      return INITIAL_LEADS;
+    }
+  });
+  const [invoices, setInvoices] = useState<Invoice[]>(() => {
+    try {
+      const saved = localStorage.getItem('dils_invoices_v1');
+      return saved ? JSON.parse(saved) : INITIAL_INVOICES;
+    } catch {
+      return INITIAL_INVOICES;
+    }
+  });
   const [trainers] = useState(INITIAL_TRAINERS);
   const [notices] = useState(NOTICES);
+
+  // Sync with Express REST API on initial mount
+  React.useEffect(() => {
+    fetch('/api/leads')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+          setLeads(data.data);
+          try {
+            localStorage.setItem('dils_leads_v1', JSON.stringify(data.data));
+          } catch {}
+        }
+      })
+      .catch(err => {
+        console.warn('[App] Local offline mode active for leads:', err.message);
+      });
+
+    fetch('/api/invoices')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+          setInvoices(data.data);
+          try {
+            localStorage.setItem('dils_invoices_v1', JSON.stringify(data.data));
+          } catch {}
+        }
+      })
+      .catch(err => {
+        console.warn('[App] Local offline mode active for invoices:', err.message);
+      });
+  }, []);
+
+  // Centralized lead creation handler (Online Modal, Fast Admission, Partner Inquiries)
+  const handleAddNewLead = async (newLeadData: Partial<Lead> & { name: string; phone: string }) => {
+    const fallbackLead: Lead = {
+      id: newLeadData.id || `LEAD-${Date.now()}`,
+      name: newLeadData.name,
+      phone: newLeadData.phone,
+      email: newLeadData.email || '',
+      courseInterest: newLeadData.courseInterest || 'Japanese JLPT N5 Foundation',
+      city: newLeadData.city || 'Dhaka',
+      education: newLeadData.education || 'HSC Passed',
+      targetIntake: newLeadData.targetIntake || 'October 2026 Intake',
+      stage: newLeadData.stage || 'new',
+      assignedCounselor: newLeadData.assignedCounselor || 'Md. Abdur Razzak (Director)',
+      createdAt: newLeadData.createdAt || 'Just now',
+      nextFollowUp: newLeadData.nextFollowUp || 'Tomorrow',
+      notes: newLeadData.notes || ['Website lead entry.']
+    };
+
+    // Optimistic UI update
+    setLeads(prev => {
+      const updated = [fallbackLead, ...prev];
+      try {
+        localStorage.setItem('dils_leads_v1', JSON.stringify(updated));
+      } catch (err) {
+        console.error('Failed to save leads to localStorage', err);
+      }
+      return updated;
+    });
+
+    // Server-side API dispatch with validation
+    try {
+      const res = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newLeadData)
+      });
+      const result = await res.json();
+      if (result.success && result.data) {
+        setLeads(prev => {
+          const replaced = prev.map(l => l.id === fallbackLead.id ? result.data : l);
+          try {
+            localStorage.setItem('dils_leads_v1', JSON.stringify(replaced));
+          } catch {}
+          return replaced;
+        });
+        return result.data;
+      }
+    } catch (err) {
+      console.warn('[App] Server dispatch failed, fallback active:', err);
+    }
+
+    return fallbackLead;
+  };
+
+  const handleUpdateLeads = (updatedLeads: Lead[]) => {
+    setLeads(updatedLeads);
+    try {
+      localStorage.setItem('dils_leads_v1', JSON.stringify(updatedLeads));
+    } catch (err) {
+      console.error('Failed to save leads', err);
+    }
+  };
+
+  const handleUpdateInvoices = async (updatedInvoices: Invoice[]) => {
+    setInvoices(updatedInvoices);
+    try {
+      localStorage.setItem('dils_invoices_v1', JSON.stringify(updatedInvoices));
+    } catch (err) {
+      console.error('Failed to save invoices', err);
+    }
+
+    // If new invoice added, sync first to server
+    const newestInvoice = updatedInvoices[0];
+    if (newestInvoice && newestInvoice.id.startsWith('inv-')) {
+      try {
+        await fetch('/api/invoices', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newestInvoice)
+        });
+      } catch (err) {
+        console.warn('[App] Invoice server sync deferred:', err);
+      }
+    }
+  };
 
   const handleOpenAdmission = (courseId?: string) => {
     setSelectedAdmissionCourseId(courseId);
@@ -91,6 +222,7 @@ export default function App() {
               setCurrentPortal(p);
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
+            onAddNewLead={handleAddNewLead}
           />
         )}
 
@@ -128,6 +260,8 @@ export default function App() {
             invoices={invoices}
             courses={courses}
             lang={lang}
+            onUpdateLeads={handleUpdateLeads}
+            onUpdateInvoices={handleUpdateInvoices}
           />
         )}
       </main>
@@ -208,6 +342,23 @@ export default function App() {
           courses={courses}
           lang={lang}
           onClose={() => setIsAdmissionOpen(false)}
+          onAdmitted={(studentName, studentId, leadData) => {
+            const courseObj = courses.find((c) => c.id === selectedAdmissionCourseId);
+            handleAddNewLead({
+              id: studentId,
+              name: studentName,
+              phone: leadData?.phone || '',
+              courseInterest: courseObj?.title || leadData?.courseInterest || 'Japanese JLPT N5',
+              education: leadData?.education || 'HSC Passed',
+              targetIntake: leadData?.targetIntake || 'October 2026 Intake',
+              city: leadData?.city || 'Dhaka',
+              notes: [
+                `Online Admission Form submission via website modal.`,
+                `Assigned Student ID: ${studentId}`,
+                `Course: ${courseObj?.title || leadData?.courseInterest || 'JLPT N5'}`
+              ]
+            });
+          }}
           onGoToStudentPortal={(courseId) => {
             setIsAdmissionOpen(false);
             setCurrentPortal('student');

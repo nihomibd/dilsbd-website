@@ -126,6 +126,8 @@ export interface Lead {
   createdAt: string;
   nextFollowUp: string;
   notes: string[];
+  lastCallOutcome?: string;
+  priority?: 'high' | 'medium' | 'low';
 }
 
 export interface Invoice {
@@ -210,5 +212,37 @@ export interface StudentJourneyStage {
   actionButtonText?: string;
   actionType?: 'learning' | 'exam' | 'certificate' | 'counseling' | 'whatsapp';
   whatsappNumber?: string;
+}
+
+export interface AchievementBadge {
+  id: string;
+  title: string;
+  titleBn: string;
+  description: string;
+  descriptionBn: string;
+  category: 'attendance' | 'kanji' | 'streak' | 'audio' | 'exam';
+  tier?: 'bronze' | 'silver' | 'gold';
+  icon: string;
+  isUnlocked: boolean;
+  unlockedAt?: string;
+  progressCurrent: number;
+  progressTarget: number;
+  metricLabel: string;
+  xpReward: number;
+}
+
+export interface SRSReviewItem {
+  id: string;
+  kanji: string;
+  furigana: string;
+  romaji: string;
+  meaningBn: string;
+  meaningEn: string;
+  jlptLevel: 'N5' | 'N4' | 'N3';
+  exampleSentenceJp: string;
+  exampleSentenceBn: string;
+  intervalDays: number;
+  reviewState: 'new' | 'learning' | 'review_due' | 'mastered';
+  retentionPercent: number;
 }
 

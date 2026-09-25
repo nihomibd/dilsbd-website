@@ -41,7 +41,7 @@ import {
   Activity,
   Compass
 } from 'lucide-react';
-import { Course, Trainer, LangMode, PortalMode } from '../types';
+import { Course, Trainer, LangMode, PortalMode, Lead } from '../types';
 import { VISA_SUCCESS_STORIES } from '../data/mockData';
 import { playPronunciation } from '../utils/audioQr';
 import { NihomiLearningAnalytics } from './NihomiLearningAnalytics';
@@ -56,14 +56,19 @@ interface JapaneseCorporateLandingProps {
   onOpenValidator?: (certId?: string) => void;
   onSwitchToStudentPortal?: (courseId: string) => void;
   onSelectPortal?: (portal: PortalMode) => void;
+  onAddNewLead?: (leadData: Partial<Lead> & { name: string; phone: string }) => void;
 }
 
 export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> = ({
+  courses,
+  trainers,
+  notices,
   lang: initialLang = 'jp',
   onOpenAdmission,
   onOpenValidator,
   onSwitchToStudentPortal,
   onSelectPortal,
+  onAddNewLead,
 }) => {
   // Multilingual First: Default is Japanese ('jp')
   const [currentLang, setCurrentLang] = useState<LangMode>(initialLang || 'jp');
@@ -447,6 +452,24 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
 
   const handlePartnerSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (onAddNewLead && (partnerForm.contactPerson || partnerForm.orgName)) {
+      onAddNewLead({
+        id: `PARTNER-${Date.now()}`,
+        name: partnerForm.contactPerson ? `${partnerForm.contactPerson} (${partnerForm.orgName || 'Japan Partner'})` : partnerForm.orgName,
+        phone: partnerForm.email || 'N/A',
+        email: partnerForm.email,
+        city: partnerForm.locationInJapan || 'Tokyo',
+        courseInterest: `Partner Inquiry (${partnerForm.orgType})`,
+        stage: 'counseling',
+        notes: [
+          `Japanese Institutional Partnership Inquiry`,
+          `Organization: ${partnerForm.orgName || 'N/A'} (${partnerForm.orgType})`,
+          `Location: ${partnerForm.locationInJapan}`,
+          `Note: ${partnerForm.notes || 'None provided'}`
+        ]
+      });
+    }
+
     setPartnerForm(prev => ({ ...prev, submitted: true }));
     setTimeout(() => {
       setPartnerModalOpen(false);
@@ -464,6 +487,26 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
 
   const handleFastAdmissionSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!admissionForm.fullName || !admissionForm.phone) return;
+
+    if (onAddNewLead) {
+      const prog = t.programs.items.find(p => p.id === selectedCourseId);
+      onAddNewLead({
+        id: `FAST-${Date.now()}`,
+        name: admissionForm.fullName,
+        phone: admissionForm.phone,
+        courseInterest: prog ? prog.name : selectedCourseId,
+        targetIntake: `${selectedBatchTime} Batch`,
+        city: 'Dhaka (Farmgate Campus)',
+        stage: 'new',
+        notes: [
+          `Fast 2-Click Admission drawer submission from landing page.`,
+          `Preferred Batch: ${selectedBatchTime}`,
+          `Course: ${prog ? prog.name : selectedCourseId}`
+        ]
+      });
+    }
+
     setAdmissionForm(prev => ({ ...prev, submitted: true }));
     setTimeout(() => {
       setFastAdmissionOpen(false);

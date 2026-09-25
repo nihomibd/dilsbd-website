@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { StudentJourneyTracker } from './StudentJourneyTracker';
+import { NihomiAchievementBadge } from './NihomiAchievementBadge';
 
 interface PortalStudentProps {
   courses: Course[];
@@ -46,7 +47,7 @@ export const PortalStudent: React.FC<PortalStudentProps> = ({
   onOpenValidator
 }) => {
   // Tabs within student portal
-  const [activeTab, setActiveTab] = useState<'journey' | 'learning' | 'live' | 'exams' | 'fees'>('journey');
+  const [activeTab, setActiveTab] = useState<'journey' | 'learning' | 'memory' | 'live' | 'exams' | 'fees'>('journey');
   
   // Enrolled course selected
   const [activeCourseId, setActiveCourseId] = useState<string>('c-jp-n5');
@@ -215,17 +216,32 @@ export const PortalStudent: React.FC<PortalStudentProps> = ({
             </div>
           </div>
 
-          {/* Quick Course Progress Summary */}
-          <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 sm:px-5 flex items-center gap-4">
-            <div>
-              <div className="text-[11px] text-slate-400">কোর্স অগ্রগতি (Progress)</div>
-              <div className="text-lg font-black text-white font-mono">{courseProgressPercent}% সম্পূর্ণ</div>
+          {/* Quick Course Progress & Memory Badge Highlights */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div 
+              onClick={() => setActiveTab('memory')}
+              className="bg-slate-950/80 border border-amber-900/50 hover:border-amber-500 cursor-pointer rounded-xl p-3 sm:px-4 flex items-center gap-3 transition-all shadow-md group"
+            >
+              <div className="w-8 h-8 rounded-lg bg-amber-500/20 group-hover:bg-amber-500/30 flex items-center justify-center text-amber-400">
+                <Award className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-[10px] text-slate-400 font-mono">নিহোমি মেমোরি ও ব্যাজ</div>
+                <div className="text-xs font-black text-amber-300 font-mono">৪টি অর্জিত • ৯২% রিটেনশন</div>
+              </div>
             </div>
-            <div className="w-24 bg-slate-800 rounded-full h-2.5 overflow-hidden">
-              <div 
-                className="bg-red-500 h-full rounded-full transition-all duration-500" 
-                style={{ width: `${courseProgressPercent}%` }}
-              ></div>
+
+            <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 sm:px-5 flex items-center gap-4">
+              <div>
+                <div className="text-[11px] text-slate-400">কোর্স অগ্রগতি (Progress)</div>
+                <div className="text-lg font-black text-white font-mono">{courseProgressPercent}% সম্পূর্ণ</div>
+              </div>
+              <div className="w-20 sm:w-24 bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                <div 
+                  className="bg-red-500 h-full rounded-full transition-all duration-500" 
+                  style={{ width: `${courseProgressPercent}%` }}
+                ></div>
+              </div>
             </div>
           </div>
 
@@ -256,6 +272,19 @@ export const PortalStudent: React.FC<PortalStudentProps> = ({
           >
             <BookOpen className="w-4 h-4" />
             <span>📚 লার্নিং হাব (Learning Hub)</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('memory')}
+            className={`px-4 py-2 rounded-xl font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'memory' 
+                ? 'bg-red-600 text-white shadow-md' 
+                : 'text-slate-400 hover:text-white bg-slate-950/60'
+            }`}
+          >
+            <Award className="w-4 h-4 text-amber-400" />
+            <span>🏅 মেমোরি ও ব্যাজ (SRS & Badges)</span>
+            <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono font-bold">New</span>
           </button>
 
           <button
@@ -534,7 +563,18 @@ export const PortalStudent: React.FC<PortalStudentProps> = ({
         </div>
       )}
 
-      {/* 3. TAB CONTENT: LIVE CLASS & SCHEDULE */}
+      {/* 3. TAB CONTENT: NIHOMI ACHIEVEMENT BADGES & MEMORY RADAR */}
+      {activeTab === 'memory' && (
+        <NihomiAchievementBadge
+          studentName="Md. Tanvir Hasan"
+          studentId="DILS-2026-0048"
+          lang={lang}
+          onOpenLiveClass={() => setActiveTab('live')}
+          onOpenExam={() => setActiveTab('exams')}
+        />
+      )}
+
+      {/* 4. TAB CONTENT: LIVE CLASS & SCHEDULE */}
       {activeTab === 'live' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Course, LangMode } from '../types';
+import { Course, LangMode, Lead } from '../types';
 import { 
   X, 
   Sparkles, 
@@ -19,7 +19,7 @@ interface OnlineAdmissionModalProps {
   courses: Course[];
   lang: LangMode;
   onClose: () => void;
-  onAdmitted?: (studentName: string, studentId: string) => void;
+  onAdmitted?: (studentName: string, studentId: string, leadData?: Partial<Lead>) => void;
   onGoToStudentPortal?: (courseId: string) => void;
 }
 
@@ -49,7 +49,13 @@ export const OnlineAdmissionModal: React.FC<OnlineAdmissionModalProps> = ({
     setSubmittedData({ studentId: generatedId, name });
     
     if (onAdmitted) {
-      onAdmitted(name, generatedId);
+      onAdmitted(name, generatedId, {
+        phone,
+        courseInterest: selectedCourse?.title || 'Japanese Language Course',
+        education,
+        targetIntake,
+        city
+      });
     }
 
     confetti({

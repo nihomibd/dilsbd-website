@@ -25,7 +25,7 @@ interface StudentJourneyTrackerProps {
   mode: 'student_portal' | 'website_overview';
   studentName?: string;
   studentId?: string;
-  onNavigateToTab?: (tab: 'learning' | 'live' | 'exams' | 'fees') => void;
+  onNavigateToTab?: (tab: 'learning' | 'memory' | 'live' | 'exams' | 'fees') => void;
   onOpenAdmission?: () => void;
   onOpenValidator?: (certId: string) => void;
   lang?: LangMode;
