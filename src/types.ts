@@ -1,8 +1,211 @@
 export type LanguageCategory = 'all' | 'japanese' | 'german' | 'ielts' | 'french' | 'korean' | 'english';
 
-export type PortalMode = 'website' | 'student' | 'instructor' | 'gradebook' | 'admin' | 'validator';
+export type PortalMode = 'website' | 'student' | 'instructor' | 'gradebook' | 'admin' | 'validator' | 'assessment' | 'membership';
 
 export type LangMode = 'bn' | 'en' | 'jp';
+
+export type MembershipPlanId = 'free' | 'core' | 'pro' | 'career';
+export type BillingCycle = 'monthly' | 'yearly';
+export type SubscriptionStatus = 'active' | 'payment_failed' | 'grace_period' | 'cancelled' | 'expired';
+
+export interface MembershipPlan {
+  id: MembershipPlanId;
+  name: string;
+  nameBn: string;
+  monthlyPrice: number;
+  yearlyPrice: number;
+  badge?: string;
+  description: string;
+  descriptionBn: string;
+  features: string[];
+  featuresBn: string[];
+  isPopular?: boolean;
+}
+
+export interface PaymentTransaction {
+  id: string;
+  subscriptionId?: string;
+  userId: string;
+  amount: number;
+  currency: string;
+  gateway: 'bkash_subscription' | 'sslcommerz' | 'sandbox';
+  trxId: string;
+  status: 'SUCCESS' | 'FAILED' | 'PENDING';
+  planId?: MembershipPlanId;
+  createdAt: string;
+}
+
+export interface UserSubscription {
+  id: string;
+  userId: string;
+  planId: MembershipPlanId;
+  planName: string;
+  billingCycle: BillingCycle;
+  status: SubscriptionStatus;
+  currentPeriodEnd: string;
+  autoRenew: boolean;
+  history?: PaymentTransaction[];
+}
+
+export interface AIFeedback {
+  isUnderstood: boolean;
+  suggestion?: string;
+  naturalAlternative?: string;
+  culturalTipBangla?: string;
+}
+
+export interface AIMessage {
+  id: string;
+  sender: 'ai' | 'user';
+  japanese: string;
+  romaji?: string;
+  bangla?: string;
+  feedback?: AIFeedback;
+  timestamp: string;
+}
+
+export interface AISpeakingScenario {
+  id: string;
+  title: string;
+  titleBn: string;
+  category: string;
+  roleJapanese: string;
+  characterAvatar: string;
+  difficulty: 'N5' | 'N4' | 'Beginner';
+  location: string;
+  initialPrompt: {
+    japanese: string;
+    romaji: string;
+    bangla: string;
+  };
+  systemPersona: string;
+  recommendedPhrases: {
+    japanese: string;
+    romaji: string;
+    bangla: string;
+  }[];
+}
+
+export interface AtRiskStudent {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  studentId?: string;
+  planId: 'free' | 'core' | 'pro' | 'career';
+  planName: string;
+  daysInactive: number;
+  lastActiveDate: string;
+  renewalDate: string;
+  riskReason: string;
+  riskSeverity: 'high' | 'medium' | 'critical';
+  contactStatus: 'pending' | 'contacted';
+  missionCompletionRate: number;
+}
+
+export interface SaasMetrics {
+  activePaidMembers: number;
+  totalMRR: number;
+  projectedARR: number;
+  churnRate: number;
+  churnCount: number;
+  failedPaymentsCount: number;
+  newSubscriptionsThisMonth: number;
+  planBreakdown: {
+    planId: string;
+    name: string;
+    count: number;
+    mrr: number;
+    percentage: number;
+    color: string;
+  }[];
+  atRiskStudents: AtRiskStudent[];
+}
+
+export interface AssessmentQuestion {
+  id: string;
+  category: 'script' | 'vocab' | 'conversation' | 'reading' | 'kanji' | 'goal';
+  question: string;
+  questionBn: string;
+  japaneseText?: string;
+  audioPronunciationText?: string;
+  options: {
+    id: string;
+    text: string;
+    textBn?: string;
+    isCorrect?: boolean;
+    tag?: string;
+  }[];
+  explanationBn?: string;
+}
+
+export interface AssessmentResult {
+  id: string;
+  sessionId: string;
+  score: number;
+  totalQuestions: number;
+  startingLevel: string;
+  levelBadge: string;
+  targetGoal: string;
+  recommendedCourseId: string;
+  recommendedCourseTitle: string;
+  roadmap: {
+    step: number;
+    title: string;
+    titleBn: string;
+    timeline: string;
+    status: 'current' | 'next' | 'future';
+  }[];
+  summaryBn: string;
+  createdAt: string;
+}
+
+export type MissionCategory = 'Konbini' | 'Greeting' | 'Dining' | 'Commute' | 'Workplace';
+
+export interface MissionStep {
+  stepNumber: 1 | 2 | 3 | 4;
+  type: 'learn' | 'listen' | 'choose' | 'complete';
+  title: string;
+  titleBn: string;
+  description: string;
+  descriptionBn: string;
+  japanesePhrase?: string;
+  romaji?: string;
+  englishMeaning?: string;
+  banglaMeaning?: string;
+  audioText?: string;
+  // For 'choose' / interaction step
+  promptSituation?: string;
+  options?: {
+    id: string;
+    text: string;
+    textBn?: string;
+    isCorrect: boolean;
+  }[];
+  feedbackBn?: string;
+}
+
+export interface DailyMission {
+  id: string;
+  title: string;
+  titleBn: string;
+  category: MissionCategory;
+  scenarioDescription: string;
+  scenarioDescriptionBn: string;
+  difficulty: 'N5' | 'Beginner' | 'N4';
+  xpReward: number;
+  estimatedMinutes: number;
+  steps: MissionStep[];
+}
+
+export interface UserMissionProgress {
+  currentStreak: number;
+  totalXp: number;
+  completedMissionIds: string[];
+  lastCompletedDate?: string;
+  isTodayCompleted: boolean;
+}
+
 
 export interface Course {
   id: string;

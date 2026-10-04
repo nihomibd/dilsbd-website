@@ -203,8 +203,13 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={() => onSelectPortal('website')}
             className="flex items-center gap-3 cursor-pointer group select-none"
           >
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-red-600 to-red-900 flex items-center justify-center shadow-lg shadow-red-950/50 border border-red-500/30 group-hover:scale-105 transition-transform flex-shrink-0">
-              <span className="text-white font-black text-lg sm:text-xl tracking-tighter">DILS</span>
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-white p-0.5 shadow-lg shadow-red-950/40 border-2 border-red-500/40 group-hover:scale-105 transition-transform flex-shrink-0 overflow-hidden flex items-center justify-center">
+              <img 
+                src="/images/dils-logo.svg" 
+                alt="Dhaka International Language School (DILS) Logo" 
+                className="w-full h-full object-contain"
+                referrerPolicy="no-referrer"
+              />
             </div>
             <div>
               <div className="flex items-center gap-2">

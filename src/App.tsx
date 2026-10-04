@@ -10,6 +10,8 @@ import { CertificateVerificationModal } from './components/CertificateVerificati
 import { OnlineAdmissionModal } from './components/OnlineAdmissionModal';
 import { FloatingContactWidget } from './components/FloatingContactWidget';
 import { LoginModal } from './components/LoginModal';
+import { AssessmentLevelCheck } from './components/AssessmentLevelCheck';
+import { MembershipPlansView } from './components/MembershipPlansView';
 import { 
   INITIAL_COURSES, 
   INITIAL_LESSONS, 
@@ -96,6 +98,30 @@ export default function App() {
         // Network failure, retain local session
       });
   }, [authToken]);
+
+  // Route listener: Check if URL points to /assessment, /membership or corresponding hashes
+  useEffect(() => {
+    const handleRoute = () => {
+      const path = window.location.pathname;
+      const hash = window.location.hash;
+      if (path === '/assessment' || hash === '#assessment') {
+        setCurrentPortal('assessment');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (path === '/membership' || hash === '#membership') {
+        setCurrentPortal('membership');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+
+    handleRoute();
+    window.addEventListener('popstate', handleRoute);
+    window.addEventListener('hashchange', handleRoute);
+
+    return () => {
+      window.removeEventListener('popstate', handleRoute);
+      window.removeEventListener('hashchange', handleRoute);
+    };
+  }, []);
 
   // Sync protected data from SQLite API when authenticated
   const fetchProtectedData = useCallback(async (token: string, user: AuthUser) => {
@@ -295,7 +321,7 @@ export default function App() {
     <div className="min-h-screen bg-[#020617] text-slate-100 selection:bg-red-600 selection:text-white flex flex-col justify-between">
       
       {/* 1. TOP HEADER & PORTAL NAVIGATION (Rendered on LMS Portals: Student, Instructor, Gradebook, CRM) */}
-      {currentPortal !== 'website' && (
+      {currentPortal !== 'website' && currentPortal !== 'assessment' && currentPortal !== 'membership' && (
         <Header
           currentPortal={currentPortal}
           onSelectPortal={(p) => {
@@ -325,6 +351,16 @@ export default function App() {
             lang={lang}
             onOpenAdmission={handleOpenAdmission}
             onOpenValidator={handleOpenValidator}
+            onOpenAssessment={() => {
+              setCurrentPortal('assessment');
+              window.location.hash = 'assessment';
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onOpenMembership={() => {
+              setCurrentPortal('membership');
+              window.location.hash = 'membership';
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             onSwitchToStudentPortal={handleSwitchToStudentPortal}
             onSelectPortal={(p) => {
               if (p !== 'website' && !authUser) {
@@ -342,6 +378,42 @@ export default function App() {
               setIsLoginOpen(true);
             }}
             onLogout={handleLogout}
+          />
+        )}
+
+        {currentPortal === 'assessment' && (
+          <AssessmentLevelCheck
+            onBackToHome={() => {
+              setCurrentPortal('website');
+              if (window.location.hash === '#assessment') {
+                window.location.hash = '';
+              }
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onOpenAdmission={(courseId) => {
+              handleOpenAdmission(courseId);
+            }}
+            onExploreCourses={() => {
+              setCurrentPortal('website');
+              window.location.hash = 'courses';
+              setTimeout(() => {
+                const el = document.getElementById('courses');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }, 100);
+            }}
+            onSaveLead={handleAddNewLead}
+          />
+        )}
+
+        {currentPortal === 'membership' && (
+          <MembershipPlansView
+            onBack={() => {
+              setCurrentPortal('website');
+              if (window.location.hash === '#membership') {
+                window.location.hash = '';
+              }
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
           />
         )}
 
@@ -386,7 +458,7 @@ export default function App() {
       </main>
 
       {/* 3. FOOTER (Only rendered on LMS Portals: Student, Instructor, Gradebook, CRM) */}
-      {currentPortal !== 'website' && (
+      {currentPortal !== 'website' && currentPortal !== 'assessment' && currentPortal !== 'membership' && (
         <footer className="border-t border-slate-900 bg-slate-950 text-xs text-slate-500 py-10 px-4 sm:px-6">
           <div className="max-w-7xl mx-auto space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-6 border-b border-slate-900 text-xs">

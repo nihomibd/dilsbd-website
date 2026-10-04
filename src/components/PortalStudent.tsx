@@ -21,11 +21,21 @@ import {
   Sparkles,
   RefreshCw,
   Compass,
-  Milestone
+  Milestone,
+  Bot,
+  ArrowRight
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { StudentJourneyTracker } from './StudentJourneyTracker';
 import { NihomiAchievementBadge } from './NihomiAchievementBadge';
+import { DailyMission, UserMissionProgress, MembershipPlan, UserSubscription, AISpeakingScenario } from '../types';
+import { DailyMissionCard } from './student/DailyMissionCard';
+import { MissionPlayerModal } from './student/MissionPlayerModal';
+import { SEED_MISSIONS, getTodayMission } from '../data/missionsData';
+import { getPlanById } from '../data/membershipPlans';
+import { CheckoutModal } from './payment/CheckoutModal';
+import { ScenarioSelector } from './practice/ScenarioSelector';
+import { AIPracticeLabModal } from './practice/AIPracticeLabModal';
 
 interface PortalStudentProps {
   courses: Course[];
@@ -47,7 +57,8 @@ export const PortalStudent: React.FC<PortalStudentProps> = ({
   onOpenValidator
 }) => {
   // Tabs within student portal
-  const [activeTab, setActiveTab] = useState<'journey' | 'learning' | 'memory' | 'live' | 'exams' | 'fees'>('journey');
+  const [activeTab, setActiveTab] = useState<'journey' | 'learning' | 'ailab' | 'memory' | 'live' | 'exams' | 'fees'>('journey');
+  const [selectedAIScenario, setSelectedAIScenario] = useState<AISpeakingScenario | null>(null);
   
   // Enrolled course selected
   const [activeCourseId, setActiveCourseId] = useState<string>('c-jp-n5');
@@ -68,6 +79,74 @@ export const PortalStudent: React.FC<PortalStudentProps> = ({
   // Invoices state
   const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
   const [paymentSuccessMsg, setPaymentSuccessMsg] = useState<string | null>(null);
+
+  // Daily Mission & 5-Minute Learning Loop State
+  const [missionProgress, setMissionProgress] = useState<UserMissionProgress>({
+    currentStreak: 4,
+    totalXp: 240,
+    completedMissionIds: ['mission-00-intro'],
+    isTodayCompleted: false
+  });
+  const [activeMission, setActiveMission] = useState<DailyMission>(SEED_MISSIONS[0]);
+  const [isMissionPlayerOpen, setIsMissionPlayerOpen] = useState<boolean>(false);
+
+  // Subscription State
+  const [subscription, setSubscription] = useState<UserSubscription | null>(null);
+  const [selectedPlanForUpgrade, setSelectedPlanForUpgrade] = useState<MembershipPlan | null>(null);
+
+  React.useEffect(() => {
+    // 1. Fetch Daily Mission
+    fetch('/api/student/missions/today')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data) {
+          if (data.data.progress) {
+            setMissionProgress(data.data.progress);
+          }
+          const found = SEED_MISSIONS.find(m => m.id === data.data.missionId) || getTodayMission(data.data.progress?.completedMissionIds);
+          setActiveMission(found);
+        }
+      })
+      .catch(() => {});
+
+    // 2. Fetch Subscription Status
+    fetch('/api/student/subscription')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data) {
+          setSubscription(data.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleCompleteMission = async (missionId: string, xpReward: number) => {
+    try {
+      const res = await fetch('/api/student/missions/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ missionId, xp: xpReward })
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        setMissionProgress(prev => ({
+          ...prev,
+          currentStreak: data.data.currentStreak,
+          totalXp: data.data.totalXp,
+          completedMissionIds: data.data.completedMissionIds,
+          isTodayCompleted: true
+        }));
+      }
+    } catch {
+      setMissionProgress(prev => ({
+        ...prev,
+        currentStreak: prev.currentStreak + 1,
+        totalXp: prev.totalXp + xpReward,
+        completedMissionIds: [...prev.completedMissionIds, missionId],
+        isTodayCompleted: true
+      }));
+    }
+  };
 
   const activeCourse = courses.find((c) => c.id === activeCourseId) || courses[0];
   const courseLessons = lessons.filter((l) => l.courseId === activeCourseId);
@@ -186,6 +265,64 @@ export const PortalStudent: React.FC<PortalStudentProps> = ({
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
       
+      {/* 0. TODAY'S DAILY MISSION & 5-MINUTE LEARNING LOOP */}
+      <DailyMissionCard
+        mission={activeMission}
+        progress={missionProgress}
+        studentName="Md. Tanvir Hasan"
+        onStartMission={() => setIsMissionPlayerOpen(true)}
+      />
+
+      {isMissionPlayerOpen && (
+        <MissionPlayerModal
+          mission={activeMission}
+          onClose={() => setIsMissionPlayerOpen(false)}
+          onComplete={handleCompleteMission}
+          nextMissionTitle="Konbini Order 🏪 (Making requests)"
+        />
+      )}
+
+      {selectedAIScenario && (
+        <AIPracticeLabModal
+          scenario={selectedAIScenario}
+          onClose={() => setSelectedAIScenario(null)}
+          onXpEarned={(newTotalXp) => {
+            setMissionProgress(prev => ({
+              ...prev,
+              totalXp: newTotalXp
+            }));
+          }}
+        />
+      )}
+
+      {/* AI SPEAKING LAB QUICK LAUNCH BAR */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-400 text-lg shrink-0">
+            🎙️
+          </div>
+          <div>
+            <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
+              <span>Nihomi AI Speaking Lab (এআই স্পিকিং ল্যাব)</span>
+              <span className="text-[10px] font-mono font-bold bg-red-950 text-red-300 border border-red-800 px-2 py-0.5 rounded">
+                Gemini 3.8 Powered
+              </span>
+            </h4>
+            <p className="text-[11px] text-slate-400">
+              কনবিনি ক্যাশিয়ার, রামেন শেফ ও টোকিও স্টেশন ট্রেন মাস্টারের সাথে রিয়েল-টাইম কথোপকথন
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setActiveTab('ailab')}
+          className="px-4 py-2 bg-red-600 hover:bg-red-500 active:scale-98 text-white font-bold text-xs rounded-xl shadow transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 shrink-0"
+        >
+          <span>ল্যাব চালু করুন (Launch AI Lab)</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
       {/* 1. STUDENT IDENTITY BANNER */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-80 h-full bg-gradient-to-l from-red-600/10 to-transparent pointer-events-none"></div>
@@ -201,11 +338,24 @@ export const PortalStudent: React.FC<PortalStudentProps> = ({
               />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-lg sm:text-xl font-black text-white">Md. Tanvir Hasan</h2>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold">
                   ভেরিফাইড শিক্ষার্থী (ENROLLED)
                 </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-red-950 text-red-300 border border-red-800 font-bold flex items-center gap-1">
+                  <span>💳</span>
+                  <span>{subscription?.planName || 'DILS Core'} ({subscription?.billingCycle === 'yearly' ? 'Yearly' : 'Monthly'})</span>
+                </span>
+                {subscription?.planId !== 'career' && (
+                  <button
+                    onClick={() => setSelectedPlanForUpgrade(getPlanById(subscription?.planId === 'core' ? 'pro' : 'career'))}
+                    className="text-[10px] font-mono px-2.5 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-bold transition-all cursor-pointer flex items-center gap-1"
+                  >
+                    <Sparkles className="w-2.5 h-2.5" />
+                    <span>Upgrade to {subscription?.planId === 'core' ? 'Pro' : 'Career'} 🚀</span>
+                  </button>
+                )}
               </div>
               <p className="text-xs text-slate-400 font-mono mt-0.5">
                 ID: <strong className="text-slate-200">DILS-2026-0048</strong> | ব্যাচ: N5 Complete Mastery (Sensei Tanvir Kabir Biplob)
@@ -275,6 +425,19 @@ export const PortalStudent: React.FC<PortalStudentProps> = ({
           </button>
 
           <button
+            onClick={() => setActiveTab('ailab')}
+            className={`px-4 py-2 rounded-xl font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'ailab' 
+                ? 'bg-red-600 text-white shadow-md' 
+                : 'text-slate-400 hover:text-white bg-slate-950/60'
+            }`}
+          >
+            <Bot className="w-4 h-4 text-red-400" />
+            <span>🎙️ AI স্পিকিং ল্যাব (Speaking Lab)</span>
+            <span className="text-[9px] bg-red-950 text-red-300 border border-red-800 px-1.5 py-0.5 rounded font-mono font-bold">Gemini AI</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('memory')}
             className={`px-4 py-2 rounded-xl font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'memory' 
@@ -335,6 +498,15 @@ export const PortalStudent: React.FC<PortalStudentProps> = ({
           onNavigateToTab={(tab) => setActiveTab(tab)}
           onOpenValidator={onOpenValidator}
           lang={lang}
+        />
+      )}
+
+      {/* 1.5. TAB CONTENT: AI JAPANESE SPEAKING & PRACTICE LAB */}
+      {activeTab === 'ailab' && (
+        <ScenarioSelector
+          onSelectScenario={(sc) => setSelectedAIScenario(sc)}
+          subscription={subscription}
+          onUpgradeToPro={() => setSelectedPlanForUpgrade(getPlanById('pro'))}
         />
       )}
 
@@ -909,6 +1081,17 @@ export const PortalStudent: React.FC<PortalStudentProps> = ({
           </div>
 
         </div>
+      )}
+
+      {selectedPlanForUpgrade && (
+        <CheckoutModal
+          plan={selectedPlanForUpgrade}
+          initialCycle={subscription?.billingCycle || 'monthly'}
+          onClose={() => setSelectedPlanForUpgrade(null)}
+          onSuccess={(newSub) => {
+            setSubscription(newSub);
+          }}
+        />
       )}
 
     </div>

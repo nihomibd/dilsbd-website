@@ -9,6 +9,8 @@ interface PortalWebsiteProps {
   lang: LangMode;
   onOpenAdmission: (courseId?: string) => void;
   onOpenValidator: (certId?: string) => void;
+  onOpenAssessment?: () => void;
+  onOpenMembership?: () => void;
   onSwitchToStudentPortal: (courseId: string) => void;
   onSelectPortal?: (portal: PortalMode) => void;
   onAddNewLead?: (leadData: Partial<Lead> & { name: string; phone: string }) => void;
@@ -24,6 +26,8 @@ export const PortalWebsite: React.FC<PortalWebsiteProps> = ({
   lang,
   onOpenAdmission,
   onOpenValidator,
+  onOpenAssessment,
+  onOpenMembership,
   onSwitchToStudentPortal,
   onSelectPortal,
   onAddNewLead,
@@ -39,6 +43,8 @@ export const PortalWebsite: React.FC<PortalWebsiteProps> = ({
       lang={lang}
       onOpenAdmission={onOpenAdmission}
       onOpenValidator={onOpenValidator}
+      onOpenAssessment={onOpenAssessment}
+      onOpenMembership={onOpenMembership}
       onSwitchToStudentPortal={onSwitchToStudentPortal}
       onSelectPortal={onSelectPortal}
       onAddNewLead={onAddNewLead}

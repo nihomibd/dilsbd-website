@@ -33,9 +33,11 @@ import {
   Filter,
   Phone,
   MapPin,
-  GraduationCap
+  GraduationCap,
+  TrendingUp
 } from 'lucide-react';
 import html2canvas from 'html2canvas-pro';
+import { MRRRetentionDashboard } from './admin/MRRRetentionDashboard';
 
 interface PortalAdminCRMProps {
   leads: Lead[];
@@ -54,7 +56,8 @@ export const PortalAdminCRM: React.FC<PortalAdminCRMProps> = ({
   onUpdateLeads,
   onUpdateInvoices
 }) => {
-  const [activeTab, setActiveTab] = useState<'crm' | 'finance' | 'batches' | 'idStudio'>('crm');
+  const [activeTab, setActiveTab] = useState<'crm' | 'saas_mrr' | 'finance' | 'batches' | 'idStudio'>('crm');
+  const [planFilter, setPlanFilter] = useState<'All' | 'Core' | 'Pro' | 'Career' | 'Free'>('All');
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
   const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
 
@@ -281,6 +284,18 @@ export const PortalAdminCRM: React.FC<PortalAdminCRMProps> = ({
 
     if (!matchesSearch || !matchesCounselor) return false;
 
+    // Plan Filter check
+    if (planFilter !== 'All') {
+      const studentPlan = l.courseInterest?.toLowerCase().includes('career') 
+        ? 'Career' 
+        : l.courseInterest?.toLowerCase().includes('n3') || l.courseInterest?.toLowerCase().includes('pro')
+        ? 'Pro'
+        : l.courseInterest?.toLowerCase().includes('n5') || l.courseInterest?.toLowerCase().includes('n4')
+        ? 'Core'
+        : 'Free';
+      if (studentPlan !== planFilter) return false;
+    }
+
     if (queueFilter === 'dueToday') {
       const lower = (l.nextFollowUp || '').toLowerCase();
       return l.stage !== 'enrolled' && (lower.includes('today') || lower.includes('tomorrow') || lower.includes('আজ') || lower.includes('কাল'));
@@ -318,6 +333,15 @@ export const PortalAdminCRM: React.FC<PortalAdminCRMProps> = ({
               }`}
             >
               লিড CRM পাইপলাইন
+            </button>
+            <button
+              onClick={() => setActiveTab('saas_mrr')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 ${
+                activeTab === 'saas_mrr' ? 'bg-red-600 text-white shadow' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+              <span>📊 SaaS & MRR Analytics</span>
             </button>
             <button
               onClick={() => setActiveTab('finance')}
@@ -438,6 +462,25 @@ export const PortalAdminCRM: React.FC<PortalAdminCRMProps> = ({
                   <option key={i} value={c}>{c}</option>
                 ))}
               </select>
+            </div>
+
+            {/* Subscription Plan Filter Chips */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-slate-400 text-xs font-semibold whitespace-nowrap">প্ল্যান ফিল্টার:</span>
+              {(['All', 'Core', 'Pro', 'Career', 'Free'] as const).map((plan) => (
+                <button
+                  key={plan}
+                  type="button"
+                  onClick={() => setPlanFilter(plan)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    planFilter === plan
+                      ? 'bg-red-600 text-white shadow'
+                      : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                  }`}
+                >
+                  {plan}
+                </button>
+              ))}
             </div>
 
             {/* Quick Filter Segmented Pills */}
@@ -635,6 +678,24 @@ export const PortalAdminCRM: React.FC<PortalAdminCRMProps> = ({
                         কোর্স: <strong className="text-amber-400">{lead.courseInterest}</strong>
                       </div>
 
+                      {/* Subscription Status Badge */}
+                      <div className="flex items-center justify-between text-[10px] font-mono">
+                        <span className="text-slate-500">মেম্বারশিপ:</span>
+                        <span className={`px-2 py-0.5 rounded font-bold ${
+                          lead.stage === 'enrolled'
+                            ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
+                            : lead.courseInterest?.toLowerCase().includes('career')
+                            ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-800/80'
+                            : lead.courseInterest?.toLowerCase().includes('n3')
+                            ? 'bg-red-950/70 text-red-300 border border-red-800/80'
+                            : 'bg-blue-950/70 text-blue-300 border border-blue-800/80'
+                        }`}>
+                          {lead.stage === 'enrolled' 
+                            ? (lead.courseInterest?.toLowerCase().includes('career') ? 'Career Track (Active)' : 'Pro Learner (Active)')
+                            : 'Free Trial (Lead)'}
+                        </span>
+                      </div>
+
                       {lead.lastCallOutcome && (
                         <div className="text-[10px] text-slate-400 italic bg-slate-900/50 p-1.5 rounded">
                           অবস্থা: <span className="text-amber-300">{lead.lastCallOutcome}</span>
@@ -701,6 +762,20 @@ export const PortalAdminCRM: React.FC<PortalAdminCRMProps> = ({
                         "{lead.notes[lead.notes.length - 1]}"
                       </p>
 
+                      {/* Subscription Status Badge */}
+                      <div className="flex items-center justify-between text-[10px] font-mono">
+                        <span className="text-slate-500">মেম্বারশিপ:</span>
+                        <span className={`px-2 py-0.5 rounded font-bold ${
+                          lead.courseInterest?.toLowerCase().includes('career')
+                            ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-800/80'
+                            : lead.courseInterest?.toLowerCase().includes('n3')
+                            ? 'bg-red-950/70 text-red-300 border border-red-800/80'
+                            : 'bg-blue-950/70 text-blue-300 border border-blue-800/80'
+                        }`}>
+                          {lead.courseInterest?.toLowerCase().includes('career') ? 'Career Track' : 'Pro Learner'}
+                        </span>
+                      </div>
+
                       <div className="flex justify-between items-center gap-1.5 pt-2 border-t border-slate-900">
                         <button
                           onClick={() => handleOpen360(lead)}
@@ -749,6 +824,14 @@ export const PortalAdminCRM: React.FC<PortalAdminCRMProps> = ({
 
                       <div className="text-slate-300 text-[11px]">
                         কোর্স: <strong>{lead.courseInterest}</strong>
+                      </div>
+
+                      {/* Subscription Status Badge */}
+                      <div className="flex items-center justify-between text-[10px] font-mono">
+                        <span className="text-slate-500">মেম্বারশিপ:</span>
+                        <span className="px-2 py-0.5 rounded font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
+                          {lead.courseInterest?.toLowerCase().includes('career') ? 'Career Track (Active)' : 'Pro Learner (Active)'}
+                        </span>
                       </div>
 
                       <div className="text-[11px] text-slate-400 bg-slate-900 p-2 rounded">
@@ -1019,6 +1102,11 @@ export const PortalAdminCRM: React.FC<PortalAdminCRMProps> = ({
 
           </div>
         </div>
+      )}
+
+      {/* 2.5. TAB: SAAS MRR & STUDENT RETENTION DASHBOARD */}
+      {activeTab === 'saas_mrr' && (
+        <MRRRetentionDashboard />
       )}
 
       {/* 3. TAB: FINANCE & INVOICES */}

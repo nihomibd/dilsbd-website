@@ -40,6 +40,8 @@ interface JapaneseCorporateLandingProps {
   lang?: LangMode;
   onOpenAdmission?: (courseId?: string) => void;
   onOpenValidator?: (certId?: string) => void;
+  onOpenAssessment?: () => void;
+  onOpenMembership?: () => void;
   onSwitchToStudentPortal?: (courseId: string) => void;
   onSelectPortal?: (portal: PortalMode) => void;
   onAddNewLead?: (leadData: Partial<Lead> & { name: string; phone: string }) => void;
@@ -78,6 +80,8 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
   lang: initialLang = 'bn',
   onOpenAdmission,
   onOpenValidator,
+  onOpenAssessment,
+  onOpenMembership,
   onSelectPortal,
   onAddNewLead,
   authUser,
@@ -266,6 +270,19 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
             <a href="#why-dils" className="hover:text-red-600 transition-colors py-1 flex items-center gap-1">
               <span>🌸 কেন DILS?</span>
             </a>
+            <button
+              onClick={() => onOpenAssessment ? onOpenAssessment() : (window.location.hash = 'assessment')}
+              className="text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer font-bold text-xs"
+            >
+              <Compass className="w-3.5 h-3.5 text-red-600" />
+              <span>লেভেল টেস্ট 🇯🇵</span>
+            </button>
+            <button
+              onClick={() => onOpenMembership ? onOpenMembership() : (window.location.hash = 'membership')}
+              className="text-slate-700 hover:text-red-600 transition-colors py-1 flex items-center gap-1 cursor-pointer font-semibold text-sm"
+            >
+              <span>💳 মেম্বারশিপ</span>
+            </button>
             <a href="#campus-gallery" className="hover:text-red-600 transition-colors py-1 flex items-center gap-1">
               <span>🏫 ক্যাম্পাস ও জাপান</span>
             </a>
@@ -322,6 +339,24 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
             >
               🌸 কেন DILS? (Why DILS)
             </a>
+            <button 
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onOpenAssessment ? onOpenAssessment() : (window.location.hash = 'assessment');
+              }}
+              className="w-full text-left py-2 border-b border-stone-100 text-red-600 font-bold flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>🧭 ফ্রি জাপান লেভেল টেস্ট (Check Level) 🇯🇵</span>
+            </button>
+            <button 
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onOpenMembership ? onOpenMembership() : (window.location.hash = 'membership');
+              }}
+              className="w-full text-left py-2 border-b border-stone-100 text-slate-800 font-bold flex items-center gap-1.5 cursor-pointer hover:text-red-600"
+            >
+              <span>💳 মেম্বারশিপ প্ল্যান (Membership Tiers)</span>
+            </button>
             <a 
               href="#campus-gallery" 
               onClick={() => setMobileMenuOpen(false)}
@@ -408,25 +443,33 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
               JLPT N1 সনদপ্রাপ্ত শিক্ষকের সরাসরি তত্ত্বাবধানে Minna no Nihongo পূর্ণাঙ্গ পাঠদান, নিহোমি স্মার্ট মেমোরি সাপোর্ট এবং শীর্ষস্থানীয় জাপানি ল্যাঙ্গুয়েজ স্কুলে ১০০% বিশ্বস্ত COE ও ভিসা প্রসেসিং।
             </p>
 
-            {/* PRIMARY CTA & VIDEO TOUR BUTTON */}
-            <div className="pt-2 flex flex-wrap items-center gap-4">
+            {/* PRIMARY CTA & LEVEL CHECK BUTTONS */}
+            <div className="pt-2 flex flex-wrap items-center gap-3.5">
               <button
                 onClick={() => onOpenAdmission && onOpenAdmission()}
-                className="px-8 py-4 bg-red-600 hover:bg-red-700 active:scale-98 text-white font-bold text-base sm:text-lg rounded-2xl shadow-xl shadow-red-600/30 transition-all flex items-center justify-center gap-3 cursor-pointer group"
+                className="px-7 py-4 bg-red-600 hover:bg-red-700 active:scale-98 text-white font-bold text-sm sm:text-base rounded-2xl shadow-xl shadow-red-600/30 transition-all flex items-center justify-center gap-2.5 cursor-pointer group"
               >
                 <GraduationCap className="w-5 h-5 group-hover:rotate-12 transition-transform" />
                 <span>ভর্তি আবেদন করুন (Enroll Now) 🎓</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+
+              <button
+                onClick={() => onOpenAssessment ? onOpenAssessment() : (window.location.hash = 'assessment')}
+                className="px-6 py-4 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-bold text-sm sm:text-base rounded-2xl shadow-xl shadow-emerald-600/25 transition-all flex items-center justify-center gap-2.5 cursor-pointer"
+              >
+                <Compass className="w-5 h-5 text-emerald-200" />
+                <span>Check My Japanese Level 🇯🇵</span>
               </button>
 
               <button
                 onClick={() => setIsVideoModalOpen(true)}
-                className="px-6 py-4 bg-white hover:bg-stone-100 text-slate-800 font-bold text-sm sm:text-base rounded-2xl border border-stone-300 shadow-sm transition-all flex items-center gap-2.5 cursor-pointer"
+                className="px-5 py-4 bg-white hover:bg-stone-100 text-slate-800 font-bold text-xs sm:text-sm rounded-2xl border border-stone-300 shadow-sm transition-all flex items-center gap-2 cursor-pointer"
               >
-                <div className="w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center">
-                  <Play className="w-3 h-3 ml-0.5 fill-white" />
+                <div className="w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center">
+                  <Play className="w-2.5 h-2.5 ml-0.5 fill-white" />
                 </div>
-                <span>ভিডিও ট্যুর দেখুন ▶️</span>
+                <span>ভিডিও ট্যুর ▶️</span>
               </button>
             </div>
 

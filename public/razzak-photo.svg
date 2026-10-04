@@ -1,0 +1,222 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="100%" height="100%">
+  <defs>
+    <!-- Background Studio Gradient -->
+    <radialGradient id="bgGrad" cx="50%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="65%" stop-color="#F8FAFC" />
+      <stop offset="100%" stop-color="#E2E8F0" />
+    </radialGradient>
+
+    <!-- Suit Fabric Gradient -->
+    <linearGradient id="suitGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#27272A" />
+      <stop offset="40%" stop-color="#18181B" />
+      <stop offset="100%" stop-color="#09090B" />
+    </linearGradient>
+
+    <!-- Lapel Shadow Gradient -->
+    <linearGradient id="lapelGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#18181B" />
+      <stop offset="100%" stop-color="#2D2D30" />
+    </linearGradient>
+
+    <!-- Skin Tone Gradients -->
+    <radialGradient id="faceGrad" cx="48%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#E2A77E" />
+      <stop offset="50%" stop-color="#D49366" />
+      <stop offset="85%" stop-color="#C27D52" />
+      <stop offset="100%" stop-color="#AB6940" />
+    </radialGradient>
+
+    <linearGradient id="neckGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#9C5C36" />
+      <stop offset="40%" stop-color="#B87349" />
+      <stop offset="100%" stop-color="#CF8B5F" />
+    </linearGradient>
+
+    <!-- Hair Gradient -->
+    <linearGradient id="hairGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2D2D2D" />
+      <stop offset="60%" stop-color="#1A1A1A" />
+      <stop offset="100%" stop-color="#0F0F0F" />
+    </linearGradient>
+
+    <!-- Polka Dot Pattern for Tie -->
+    <pattern id="polkaDots" x="0" y="0" width="16" height="16" patternUnits="userSpaceOnUse">
+      <circle cx="8" cy="8" r="1.8" fill="#FFFFFF" opacity="0.9" />
+    </pattern>
+
+    <!-- Tie Base Gradient -->
+    <linearGradient id="tieGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3F3F46" />
+      <stop offset="50%" stop-color="#27272A" />
+      <stop offset="100%" stop-color="#18181B" />
+    </linearGradient>
+
+    <!-- Drop Shadow for Lower Badge -->
+    <filter id="badgeShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <!-- Studio Backdrop -->
+  <rect width="600" height="800" fill="url(#bgGrad)" />
+
+  <!-- Subtle Rim Light Ambient Glow -->
+  <ellipse cx="300" cy="320" rx="220" ry="260" fill="#FFFFFF" opacity="0.6" filter="blur(30px)" />
+
+  <!-- ==================== BODY & CLOTHING ==================== -->
+  <g id="body">
+    <!-- Shirt Base -->
+    <path d="M 230,480 L 370,480 L 400,600 L 200,600 Z" fill="#F8FAFC" />
+    
+    <!-- Pinstripes on Shirt -->
+    <path d="M 240,480 L 235,580 M 255,480 L 250,580 M 270,480 L 268,580 M 330,480 L 332,580 M 345,480 L 350,580 M 360,480 L 365,580" 
+          stroke="#CBD5E1" stroke-width="1.5" />
+
+    <!-- Shoulders & Dark Suit Jacket -->
+    <!-- Left Shoulder & Body -->
+    <path d="M 220,530 C 170,550 90,600 40,780 L 300,780 L 300,560 Z" fill="url(#suitGrad)" />
+    <!-- Right Shoulder & Body -->
+    <path d="M 380,530 C 430,550 510,600 560,780 L 300,780 L 300,560 Z" fill="url(#suitGrad)" />
+
+    <!-- Suit Lapels (Black Business Suit) -->
+    <!-- Left Lapel -->
+    <path d="M 220,530 L 160,650 L 245,690 L 240,780 L 290,780 L 270,570 Z" fill="url(#lapelGrad)" stroke="#18181B" stroke-width="1" />
+    <!-- Right Lapel -->
+    <path d="M 380,530 L 440,650 L 355,690 L 360,780 L 310,780 L 330,570 Z" fill="url(#lapelGrad)" stroke="#18181B" stroke-width="1" />
+
+    <!-- Shirt Collar Wings -->
+    <!-- Left Collar -->
+    <polygon points="230,490 280,545 250,555 220,505" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1" />
+    <!-- Right Collar -->
+    <polygon points="370,490 320,545 350,555 380,505" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1" />
+
+    <!-- Necktie Knot -->
+    <polygon points="280,535 320,535 315,570 285,570" fill="url(#tieGrad)" />
+    <polygon points="280,535 320,535 315,570 285,570" fill="url(#polkaDots)" />
+
+    <!-- Necktie Body with Polka Dots -->
+    <path d="M 285,570 L 315,570 L 328,780 L 272,780 Z" fill="url(#tieGrad)" />
+    <path d="M 285,570 L 315,570 L 328,780 L 272,780 Z" fill="url(#polkaDots)" />
+    
+    <!-- Red Lapel Pin / DILS Emblem Pin -->
+    <circle cx="195" cy="625" r="7" fill="#C8102E" stroke="#FFD700" stroke-width="1.5" />
+    <circle cx="195" cy="625" r="3" fill="#FFD700" />
+  </g>
+
+  <!-- ==================== NECK & HEAD ==================== -->
+  <g id="head">
+    <!-- Neck -->
+    <path d="M 245,420 L 355,420 L 365,520 L 235,520 Z" fill="url(#neckGrad)" />
+    <!-- Neck Shadow -->
+    <path d="M 245,430 C 275,475 325,475 355,430 L 360,460 C 330,500 270,500 240,460 Z" fill="#783D1B" opacity="0.35" />
+
+    <!-- Head / Face Silhouette -->
+    <!-- Jaw and Face Shape (Broad, warm, South Asian features) -->
+    <path d="M 205,300 
+             C 195,370 215,445 255,465 
+             C 280,475 320,475 345,465 
+             C 385,445 405,370 395,300 
+             C 390,210 210,210 205,300 Z" 
+          fill="url(#faceGrad)" />
+
+    <!-- Ears -->
+    <!-- Left Ear -->
+    <path d="M 205,310 C 185,325 185,370 208,385 Z" fill="#C98457" stroke="#AB6940" stroke-width="1" />
+    <!-- Right Ear -->
+    <path d="M 395,310 C 415,325 415,370 392,385 Z" fill="#C98457" stroke="#AB6940" stroke-width="1" />
+
+    <!-- Hair (Neat, short black parted corporate hair) -->
+    <path d="M 195,315 
+             C 185,250 220,185 300,180 
+             C 380,185 415,250 405,315 
+             C 395,290 385,235 300,230 
+             C 225,235 205,290 195,315 Z" 
+          fill="url(#hairGrad)" />
+    <!-- Hair Forehead Line -->
+    <path d="M 215,285 C 260,245 340,245 385,285 C 370,250 340,240 300,242 C 255,240 230,255 215,285 Z" fill="#1C1917" />
+
+    <!-- Forehead Character Lines (Subtle wisdom expression) -->
+    <path d="M 260,265 Q 300,260 340,265" stroke="#9A5B32" stroke-width="1.2" opacity="0.4" fill="none" />
+    <path d="M 255,275 Q 300,270 345,275" stroke="#9A5B32" stroke-width="1.2" opacity="0.3" fill="none" />
+
+    <!-- Eyebrows (Strong, natural dark brows) -->
+    <path d="M 235,315 Q 260,305 282,315" stroke="#1C1917" stroke-width="5" stroke-linecap="round" fill="none" />
+    <path d="M 318,315 Q 340,305 365,315" stroke="#1C1917" stroke-width="5" stroke-linecap="round" fill="none" />
+
+    <!-- Eyes (Warm, friendly gaze with slight smile crinkles) -->
+    <!-- Left Eye -->
+    <ellipse cx="260" cy="335" rx="16" ry="9" fill="#FFFFFF" />
+    <ellipse cx="262" cy="335" rx="7.5" ry="7.5" fill="#3D2314" />
+    <circle cx="260" cy="333" r="3.5" fill="#09090B" />
+    <circle cx="264" cy="332" r="1.5" fill="#FFFFFF" />
+    <!-- Left Eyelid & Crease -->
+    <path d="M 242,333 Q 260,323 278,333" stroke="#5C3117" stroke-width="2.5" fill="none" />
+    <path d="M 240,327 Q 260,318 280,327" stroke="#783D1B" stroke-width="1" opacity="0.6" fill="none" />
+
+    <!-- Right Eye -->
+    <ellipse cx="340" cy="335" rx="16" ry="9" fill="#FFFFFF" />
+    <ellipse cx="338" cy="335" rx="7.5" ry="7.5" fill="#3D2314" />
+    <circle cx="340" cy="333" r="3.5" fill="#09090B" />
+    <circle cx="336" cy="332" r="1.5" fill="#FFFFFF" />
+    <!-- Right Eyelid & Crease -->
+    <path d="M 322,333 Q 340,323 358,333" stroke="#5C3117" stroke-width="2.5" fill="none" />
+    <path d="M 320,327 Q 340,318 360,327" stroke="#783D1B" stroke-width="1" opacity="0.6" fill="none" />
+
+    <!-- Smile Crinkles around Eyes -->
+    <path d="M 238,333 Q 232,338 230,344" stroke="#8C4F27" stroke-width="1.2" opacity="0.5" fill="none" />
+    <path d="M 362,333 Q 368,338 370,344" stroke="#8C4F27" stroke-width="1.2" opacity="0.5" fill="none" />
+
+    <!-- Nose -->
+    <path d="M 300,315 L 297,375 Q 300,385 303,375 Z" fill="#BD794D" opacity="0.4" />
+    <!-- Nose Tip & Nostrils -->
+    <path d="M 285,380 C 292,390 308,390 315,380" stroke="#783D1B" stroke-width="2" fill="none" />
+    <ellipse cx="288" cy="382" rx="4" ry="2.5" fill="#5C3117" opacity="0.6" />
+    <ellipse cx="312" cy="382" rx="4" ry="2.5" fill="#5C3117" opacity="0.6" />
+
+    <!-- Smile / Mouth (Warm, confident, gentle teacher smile) -->
+    <!-- Upper Lip -->
+    <path d="M 270,418 Q 300,414 330,418" stroke="#783D1B" stroke-width="2.5" stroke-linecap="round" fill="none" />
+    <!-- Lower Lip Smile Curve -->
+    <path d="M 272,419 Q 300,432 328,419" fill="#B35B3B" stroke="#783D1B" stroke-width="1.5" />
+    <!-- White Teeth Line in gentle smile -->
+    <path d="M 278,419 Q 300,424 322,419" fill="#FFFFFF" />
+    <!-- Smile Dimples / Laugh Lines -->
+    <path d="M 264,410 Q 262,422 268,430" stroke="#8C4F27" stroke-width="1.2" opacity="0.5" fill="none" />
+    <path d="M 336,410 Q 338,422 332,430" stroke="#8C4F27" stroke-width="1.2" opacity="0.5" fill="none" />
+
+    <!-- Chin Contour -->
+    <path d="M 285,450 Q 300,455 315,450" stroke="#8C4F27" stroke-width="1.5" opacity="0.4" fill="none" />
+  </g>
+
+  <!-- ==================== EXECUTIVE BADGE OVERLAY ==================== -->
+  <g transform="translate(40, 680)" filter="url(#badgeShadow)">
+    <!-- Glassmorphic Card Background -->
+    <rect width="520" height="92" rx="18" fill="#09090B" fill-opacity="0.88" stroke="#DC2626" stroke-width="1.5" />
+    
+    <!-- Gold accent line on top -->
+    <rect x="20" y="0" width="120" height="3" fill="#FBB040" rx="1.5" />
+
+    <!-- Director Name & Credentials -->
+    <text x="24" y="36" font-family="'Times New Roman', Times, serif" font-size="22" font-weight="bold" fill="#FFFFFF" letter-spacing="1">
+      MD. ABDUR RAZZAK
+    </text>
+    
+    <!-- Title & JLPT Level -->
+    <text x="24" y="58" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" fill="#EF4444">
+      ACADEMY DIRECTOR &amp; SENIOR JAPANESE MENTOR (JLPT-N1)
+    </text>
+    
+    <!-- Institution & Success Rate -->
+    <text x="24" y="76" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="500" fill="#94A3B8">
+      Dhaka International Language School (DILS) • 12+ Years Japan Visa &amp; COE Leadership
+    </text>
+
+    <!-- Verified Badge Icon -->
+    <g transform="translate(470, 24)">
+      <circle cx="16" cy="16" r="16" fill="#10B981" fill-opacity="0.2" stroke="#10B981" stroke-width="1.5" />
+      <path d="M 10,16 L 14,20 L 22,12" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    </g>
+  </g>
+</svg>
