@@ -73,16 +73,23 @@ export default function App() {
         'Authorization': `Bearer ${authToken}`
       }
     })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          // If server returns 404 (e.g. static hosting on Vercel), preserve session!
+          if (res.status === 404) return null;
+          if (res.status === 401) {
+            handleLogout();
+            return null;
+          }
+        }
+        return res.json();
+      })
       .then(data => {
-        if (data.success && data.user) {
+        if (data && data.success && data.user) {
           setAuthUser(data.user);
           try {
             sessionStorage.setItem('dils_auth_user_v2', JSON.stringify(data.user));
           } catch {}
-        } else {
-          // Token expired or invalid
-          handleLogout();
         }
       })
       .catch(() => {
@@ -287,24 +294,26 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#020617] text-slate-100 selection:bg-red-600 selection:text-white flex flex-col justify-between">
       
-      {/* 1. TOP HEADER & PORTAL NAVIGATION (Visible across entire application) */}
-      <Header
-        currentPortal={currentPortal}
-        onSelectPortal={(p) => {
-          setCurrentPortal(p);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-        lang={lang}
-        onSelectLang={setLang}
-        onOpenAdmission={() => handleOpenAdmission()}
-        onOpenValidator={() => handleOpenValidator('DILS-CERT-2026-0048')}
-        authUser={authUser}
-        onOpenLogin={(targetPortal) => {
-          setTargetLoginPortal(targetPortal);
-          setIsLoginOpen(true);
-        }}
-        onLogout={handleLogout}
-      />
+      {/* 1. TOP HEADER & PORTAL NAVIGATION (Rendered on LMS Portals: Student, Instructor, Gradebook, CRM) */}
+      {currentPortal !== 'website' && (
+        <Header
+          currentPortal={currentPortal}
+          onSelectPortal={(p) => {
+            setCurrentPortal(p);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          lang={lang}
+          onSelectLang={setLang}
+          onOpenAdmission={() => handleOpenAdmission()}
+          onOpenValidator={() => handleOpenValidator('DILS-CERT-2026-0048')}
+          authUser={authUser}
+          onOpenLogin={(targetPortal) => {
+            setTargetLoginPortal(targetPortal);
+            setIsLoginOpen(true);
+          }}
+          onLogout={handleLogout}
+        />
+      )}
 
       {/* 2. PORTAL BODY VIEWPORT */}
       <main className="flex-1">
@@ -327,6 +336,12 @@ export default function App() {
               }
             }}
             onAddNewLead={handleAddNewLead}
+            authUser={authUser}
+            onOpenLogin={(targetPortal) => {
+              setTargetLoginPortal(targetPortal);
+              setIsLoginOpen(true);
+            }}
+            onLogout={handleLogout}
           />
         )}
 
@@ -370,68 +385,70 @@ export default function App() {
         )}
       </main>
 
-      {/* 3. FOOTER */}
-      <footer className="border-t border-slate-900 bg-slate-950 text-xs text-slate-500 py-10 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-6 border-b border-slate-900 text-xs">
-            <div>
-              <span className="text-white font-bold text-sm block mb-1">
-                Dhaka International Language School & Visa Center (DILS)
-              </span>
-              <p className="text-slate-400 text-[11px] leading-relaxed">
-                {DILS_INFO.address}
-              </p>
-              <div className="mt-2 text-[11px] text-slate-400">
-                অফিসিয়াল ওয়েবসাইট: <a href="https://www.dilsbd.com" target="_blank" rel="noreferrer" className="text-white hover:text-red-400 font-semibold underline">dilsbd.com</a>
+      {/* 3. FOOTER (Only rendered on LMS Portals: Student, Instructor, Gradebook, CRM) */}
+      {currentPortal !== 'website' && (
+        <footer className="border-t border-slate-900 bg-slate-950 text-xs text-slate-500 py-10 px-4 sm:px-6">
+          <div className="max-w-7xl mx-auto space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-6 border-b border-slate-900 text-xs">
+              <div>
+                <span className="text-white font-bold text-sm block mb-1">
+                  Dhaka International Language School & Visa Center (DILS)
+                </span>
+                <p className="text-slate-400 text-[11px] leading-relaxed">
+                  {DILS_INFO.address}
+                </p>
+                <div className="mt-2 text-[11px] text-slate-400">
+                  অফিসিয়াল ওয়েবসাইট: <a href="https://www.dilsbd.com" target="_blank" rel="noreferrer" className="text-white hover:text-red-400 font-semibold underline">dilsbd.com</a>
+                </div>
+              </div>
+
+              <div>
+                <span className="text-white font-bold text-xs block mb-1">অফিসিয়াল যোগাযোগ ও হটলাইন</span>
+                <p className="text-slate-400 text-[11px]">
+                  হটলাইন: <strong className="text-emerald-400 font-mono">{DILS_INFO.hotline}</strong>
+                </p>
+                <p className="text-slate-400 text-[11px]">
+                  WhatsApp: <strong className="text-slate-300 font-mono">{DILS_INFO.whatsapp}</strong>
+                </p>
+                <p className="text-slate-400 text-[11px]">
+                  ইমেইল: <strong className="text-slate-300">{DILS_INFO.email}</strong>
+                </p>
+              </div>
+
+              <div>
+                <span className="text-white font-bold text-xs block mb-1">নেতৃত্ব ও একাডেমি মেন্টর</span>
+                <p className="text-slate-400 text-[11px]">
+                  পরিচালক: <strong className="text-slate-200">{DILS_INFO.director}</strong> (JLPT-N1)
+                </p>
+                <p className="text-slate-400 text-[11px]">
+                  ইন্সট্রাক্টর: <strong className="text-slate-200">{DILS_INFO.instructor}</strong> (JLPT-N2)
+                </p>
+                <a
+                  href={DILS_INFO.facebook}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue-400 hover:text-blue-300 text-[11px] font-semibold mt-1 inline-block"
+                >
+                  ফেসবুক পেজে যুক্ত হোন →
+                </a>
               </div>
             </div>
 
-            <div>
-              <span className="text-white font-bold text-xs block mb-1">অফিসিয়াল যোগাযোগ ও হটলাইন</span>
-              <p className="text-slate-400 text-[11px]">
-                হটলাইন: <strong className="text-emerald-400 font-mono">{DILS_INFO.hotline}</strong>
-              </p>
-              <p className="text-slate-400 text-[11px]">
-                WhatsApp: <strong className="text-slate-300 font-mono">{DILS_INFO.whatsapp}</strong>
-              </p>
-              <p className="text-slate-400 text-[11px]">
-                ইমেইল: <strong className="text-slate-300">{DILS_INFO.email}</strong>
-              </p>
-            </div>
-
-            <div>
-              <span className="text-white font-bold text-xs block mb-1">নেতৃত্ব ও একাডেমি মেন্টর</span>
-              <p className="text-slate-400 text-[11px]">
-                পরিচালক: <strong className="text-slate-200">{DILS_INFO.director}</strong> (JLPT-N1)
-              </p>
-              <p className="text-slate-400 text-[11px]">
-                ইন্সট্রাক্টর: <strong className="text-slate-200">{DILS_INFO.instructor}</strong> (JLPT-N2)
-              </p>
-              <a
-                href={DILS_INFO.facebook}
-                target="_blank"
-                rel="noreferrer"
-                className="text-blue-400 hover:text-blue-300 text-[11px] font-semibold mt-1 inline-block"
-              >
-                ফেসবুক পেজে যুক্ত হোন →
-              </a>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px]">
+              <div>
+                © 2026 Dhaka International Language School (DILS). All Rights Reserved.
+              </div>
+              <div className="flex items-center gap-3 text-slate-400">
+                <span>Database: <strong className="text-emerald-400 font-mono">SQLite Persistent Engine</strong></span>
+                <span>•</span>
+                <span>Auth: <strong className="text-slate-200 font-mono">JWT / RBAC Protected</strong></span>
+                <span>•</span>
+                <span className="text-red-400 font-mono">dilsbd.com Production Engine</span>
+              </div>
             </div>
           </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px]">
-            <div>
-              © 2026 Dhaka International Language School (DILS). All Rights Reserved.
-            </div>
-            <div className="flex items-center gap-3 text-slate-400">
-              <span>Database: <strong className="text-emerald-400 font-mono">SQLite Persistent Engine</strong></span>
-              <span>•</span>
-              <span>Auth: <strong className="text-slate-200 font-mono">JWT / RBAC Protected</strong></span>
-              <span>•</span>
-              <span className="text-red-400 font-mono">dilsbd.com Production Engine</span>
-            </div>
-          </div>
-        </div>
-      </footer>
+        </footer>
+      )}
 
       {/* 4. FLOATING CONTACT & HELPDESK WIDGET */}
       <FloatingContactWidget

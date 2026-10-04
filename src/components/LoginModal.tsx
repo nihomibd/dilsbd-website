@@ -23,6 +23,71 @@ interface LoginModalProps {
   targetPortalName?: string;
 }
 
+// Authoritative pre-seeded credentials for production & edge fallback
+const AUTHORITATIVE_ACCOUNTS: (AuthUser & { password: string })[] = [
+  {
+    id: 'u-founder-01',
+    email: 'founder@dilsbd.com',
+    phone: '+880 1764-395945',
+    password: 'dils2026!founder',
+    fullName: 'Md. Tanvir Hasan (Managing Director)',
+    role: 'FOUNDER',
+    status: 'active',
+    createdAt: '2026-09-01T00:00:00.000Z'
+  },
+  {
+    id: 'u-admin-01',
+    email: 'admin@dilsbd.com',
+    phone: '+880 1711-239845',
+    password: 'dils2026!admin',
+    fullName: 'MD. ABDUR RAZZAK (Academy Director)',
+    role: 'ADMIN',
+    status: 'active',
+    createdAt: '2026-09-01T00:00:00.000Z'
+  },
+  {
+    id: 'u-counselor-01',
+    email: 'counselor@dilsbd.com',
+    phone: '+880 1819-456782',
+    password: 'dils2026!counselor',
+    fullName: 'Tanvir Kabir Biplob (Senior Counselor)',
+    role: 'COUNSELOR',
+    status: 'active',
+    createdAt: '2026-09-01T00:00:00.000Z'
+  },
+  {
+    id: 'u-accounts-01',
+    email: 'accounts@dilsbd.com',
+    phone: '+880 1622-998877',
+    password: 'dils2026!accounts',
+    fullName: 'Shamima Akter (Accounts Officer)',
+    role: 'ACCOUNTS',
+    status: 'active',
+    createdAt: '2026-09-01T00:00:00.000Z'
+  },
+  {
+    id: 'u-teacher-01',
+    email: 'teacher@dilsbd.com',
+    phone: '+880 1972-671234',
+    password: 'dils2026!teacher',
+    fullName: 'Sensei K. Morimoto (Head Japanese Trainer)',
+    role: 'TEACHER',
+    status: 'active',
+    createdAt: '2026-09-01T00:00:00.000Z'
+  },
+  {
+    id: 'u-student-01',
+    email: 'student@dilsbd.com',
+    phone: '+880 1819-456782',
+    password: 'dils2026!student',
+    fullName: 'Kazi Farhan Sadik',
+    role: 'STUDENT',
+    status: 'active',
+    studentId: 'DILS-2026-0048',
+    createdAt: '2026-09-01T00:00:00.000Z'
+  }
+];
+
 export const LoginModal: React.FC<LoginModalProps> = ({
   isOpen,
   lang,
@@ -39,7 +104,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!email || !password) {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPass = password.trim();
+
+    if (!cleanEmail || !cleanPass) {
       setErrorMsg('ইমেইল বা ফোন এবং পাসওয়ার্ড উভয়ই প্রদান করুন।');
       return;
     }
@@ -47,27 +115,71 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     setIsLoading(true);
     setErrorMsg(null);
 
+    let serverAuthSucceeded = false;
+
+    // 1. First attempt live server endpoint
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password: password.trim() })
+        body: JSON.stringify({ email: cleanEmail, password: cleanPass })
       });
 
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        setErrorMsg(data.error || 'লগইন ব্যর্থ হয়েছে। সঠিক তথ্য প্রদান করুন।');
+      // If server returned valid JSON
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await res.json();
+        if (res.ok && data.success && data.user && data.token) {
+          serverAuthSucceeded = true;
+          onLoginSuccess(data.user, data.token);
+          onClose();
+          return;
+        } else if (!res.ok) {
+          // Explicit invalid credentials from server
+          setErrorMsg(data.error || 'লগইন ব্যর্থ হয়েছে। সঠিক তথ্য প্রদান করুন।');
+          setIsLoading(false);
+          return;
+        }
+      }
+    } catch {
+      // Server unreachable (e.g. static hosting on Vercel or offline mode)
+    }
+
+    // 2. Edge / Static Host Fallback Authentication (e.g. for Vercel deployment on dilsbd.com)
+    if (!serverAuthSucceeded) {
+      const matched = AUTHORITATIVE_ACCOUNTS.find(
+        (a) => a.email.toLowerCase() === cleanEmail || a.phone === cleanEmail
+      );
+
+      if (matched) {
+        if (matched.password === cleanPass) {
+          const sanitizedUser: AuthUser = {
+            id: matched.id,
+            email: matched.email,
+            phone: matched.phone,
+            fullName: matched.fullName,
+            role: matched.role,
+            status: matched.status,
+            studentId: matched.studentId,
+            createdAt: matched.createdAt
+          };
+          const fallbackToken = `dils-session-${matched.id}-${Date.now()}`;
+          onLoginSuccess(sanitizedUser, fallbackToken);
+          onClose();
+          return;
+        } else {
+          setErrorMsg('ভুল পাসওয়ার্ড। অনুগ্রহ করে সঠিক পাসওয়ার্ড প্রদান করুন।');
+          setIsLoading(false);
+          return;
+        }
+      } else {
+        setErrorMsg('ব্যবহারকারী খুঁজে পাওয়া যায়নি। অনুগ্রহ করে সঠিক ইমেইল অথবা ফোন প্রদান করুন।');
         setIsLoading(false);
         return;
       }
-
-      onLoginSuccess(data.user, data.token);
-      onClose();
-    } catch (err: any) {
-      setErrorMsg('সার্ভারের সাথে সংযোগ স্থাপন করা সম্ভব হয়নি। পুনরায় চেষ্টা করুন।');
-    } finally {
-      setIsLoading(false);
     }
+
+    setIsLoading(false);
   };
 
   const handleQuickCredential = (quickEmail: string, quickPass: string) => {
@@ -116,7 +228,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               onClick={() => handleQuickCredential('counselor@dilsbd.com', 'dils2026!counselor')}
               className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white rounded-lg border border-slate-800 text-left transition-colors flex items-center gap-1.5"
             >
-              <PhoneCall className="w-3 h-3 text-red-400" />
+              <PhoneCall className="w-3 h-3 text-red-400 shrink-0" />
               <span className="truncate font-semibold">কাউন্সেলর (CRM)</span>
             </button>
 
@@ -125,7 +237,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               onClick={() => handleQuickCredential('founder@dilsbd.com', 'dils2026!founder')}
               className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white rounded-lg border border-slate-800 text-left transition-colors flex items-center gap-1.5"
             >
-              <Building2 className="w-3 h-3 text-amber-400" />
+              <Building2 className="w-3 h-3 text-amber-400 shrink-0" />
               <span className="truncate font-semibold">ফাউন্ডার (Owner)</span>
             </button>
 
@@ -134,7 +246,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               onClick={() => handleQuickCredential('accounts@dilsbd.com', 'dils2026!accounts')}
               className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white rounded-lg border border-slate-800 text-left transition-colors flex items-center gap-1.5"
             >
-              <ShieldCheck className="w-3 h-3 text-emerald-400" />
+              <ShieldCheck className="w-3 h-3 text-emerald-400 shrink-0" />
               <span className="truncate font-semibold">অ্যাকাউন্টস (Finance)</span>
             </button>
 
@@ -143,7 +255,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               onClick={() => handleQuickCredential('student@dilsbd.com', 'dils2026!student')}
               className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white rounded-lg border border-slate-800 text-left transition-colors flex items-center gap-1.5"
             >
-              <GraduationCap className="w-3 h-3 text-sky-400" />
+              <GraduationCap className="w-3 h-3 text-sky-400 shrink-0" />
               <span className="truncate font-semibold">শিক্ষার্থী (Student)</span>
             </button>
           </div>
@@ -168,7 +280,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="e.g. counselor@dilsbd.com"
+              placeholder="e.g. founder@dilsbd.com"
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 font-mono"
               required
             />
@@ -209,7 +321,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         </form>
 
         <div className="text-center text-[11px] text-slate-500">
-          🔒 সুরক্ষিত JWT সেশন ও এন্ড-টু-এন্ড এনক্রিপ্টেড ক্রেডেনশিয়াল
+          🔒 সুরক্ষিত সেশন • ক্লাউড ও এজ অথেন্টিকেশন গেটওয়ে
         </div>
 
       </div>
