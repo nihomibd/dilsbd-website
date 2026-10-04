@@ -26,7 +26,9 @@ import {
   Video,
   FileCheck,
   Star,
-  Users
+  Users,
+  Compass,
+  Camera
 } from 'lucide-react';
 import { Course, Trainer, LangMode, PortalMode, Lead, AuthUser } from '../types';
 import { VISA_SUCCESS_STORIES, DILS_INFO, INITIAL_COURSES } from '../data/mockData';
@@ -45,6 +47,30 @@ interface JapaneseCorporateLandingProps {
   onOpenLogin?: (targetPortal?: PortalMode) => void;
   onLogout?: () => void;
 }
+
+// Resilient Image Component with Automatic Fallback
+const SmartImage: React.FC<{
+  src: string;
+  fallbackSrc: string;
+  alt: string;
+  className?: string;
+}> = ({ src, fallbackSrc, alt, className }) => {
+  const [currentSrc, setCurrentSrc] = useState(src);
+
+  return (
+    <img
+      src={currentSrc}
+      alt={alt}
+      className={className}
+      onError={() => {
+        if (currentSrc !== fallbackSrc) {
+          setCurrentSrc(fallbackSrc);
+        }
+      }}
+      referrerPolicy="no-referrer"
+    />
+  );
+};
 
 export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> = ({
   courses = INITIAL_COURSES,
@@ -240,6 +266,9 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
             <a href="#why-dils" className="hover:text-red-600 transition-colors py-1 flex items-center gap-1">
               <span>🌸 কেন DILS?</span>
             </a>
+            <a href="#campus-gallery" className="hover:text-red-600 transition-colors py-1 flex items-center gap-1">
+              <span>🏫 ক্যাম্পাস ও জাপান</span>
+            </a>
             <a href="#pathway" className="hover:text-red-600 transition-colors py-1 flex items-center gap-1">
               <span>✈️ ভিসা গাইড</span>
             </a>
@@ -249,15 +278,12 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
             <a href="#batches" className="hover:text-red-600 transition-colors py-1 flex items-center gap-1">
               <span>⏰ ক্লাস রুটিন</span>
             </a>
-            <a href="#success" className="hover:text-red-600 transition-colors py-1 flex items-center gap-1">
-              <span>🏆 ভিসা সাফল্য</span>
-            </a>
             <a href="#contact" className="hover:text-red-600 transition-colors py-1 flex items-center gap-1">
               <span>📍 যোগাযোগ</span>
             </a>
           </nav>
 
-          {/* Clean Header Action Button */}
+          {/* Header Action Button */}
           <div className="hidden sm:flex items-center gap-3">
             <button
               onClick={() => onOpenAdmission && onOpenAdmission()}
@@ -297,6 +323,13 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
               🌸 কেন DILS? (Why DILS)
             </a>
             <a 
+              href="#campus-gallery" 
+              onClick={() => setMobileMenuOpen(false)}
+              className="block py-2 border-b border-stone-100 hover:text-red-600"
+            >
+              🏫 ক্যাম্পাস ও জাপান কালচার (Campus & Japan)
+            </a>
+            <a 
               href="#pathway" 
               onClick={() => setMobileMenuOpen(false)}
               className="block py-2 border-b border-stone-100 hover:text-red-600"
@@ -318,13 +351,6 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
               ⏰ ক্লাস রুটিন (Schedule)
             </a>
             <a 
-              href="#success" 
-              onClick={() => setMobileMenuOpen(false)}
-              className="block py-2 border-b border-stone-100 hover:text-red-600"
-            >
-              🏆 সাফল্যের গল্প (Alumni Stories)
-            </a>
-            <a 
               href="#contact" 
               onClick={() => setMobileMenuOpen(false)}
               className="block py-2 hover:text-red-600"
@@ -343,28 +369,17 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
                 <GraduationCap className="w-4 h-4" />
                 <span>অনলাইন ভর্তি আবেদন 🎓</span>
               </button>
-
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  setIsVideoModalOpen(true);
-                }}
-                className="w-full py-2.5 bg-stone-100 hover:bg-stone-200 text-slate-800 font-bold rounded-xl text-center text-xs flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Play className="w-3.5 h-3.5 fill-red-600 text-red-600" />
-                <span>ভিডিও ট্যুর দেখুন ▶️</span>
-              </button>
             </div>
           </div>
         )}
       </header>
 
       {/* =========================================================================
-          3. HERO SECTION (RICH VISUAL SPLIT + VIDEO TOUR + FLOATING BADGES + SINGLE CTA)
+          3. HERO SECTION (JAPANESE SCENERY + REAL ACADEMY VIBES + VIDEO TOUR)
          ========================================================================= */}
       <section className="relative bg-gradient-to-b from-white via-stone-50 to-stone-100 py-16 sm:py-24 px-4 sm:px-8 border-b border-stone-200 overflow-hidden">
         
-        {/* Soft Japanese Aesthetics Background Blooms */}
+        {/* Soft Traditional Cherry Blossom Aura */}
         <div className="absolute top-0 right-0 w-[550px] h-[550px] bg-red-500/5 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[550px] h-[550px] bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
 
@@ -437,7 +452,7 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
 
           </motion.div>
 
-          {/* Right Column: High-Res Japanese Academy Photo Card + Video Play Overlay + Animated Badges */}
+          {/* Right Column: Visual Japanese Academy & Student Showcase */}
           <motion.div 
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -446,11 +461,11 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
           >
             {/* Visual Classroom Card */}
             <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-white group">
-              <img
+              <SmartImage
                 src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1000&auto=format&fit=crop&q=80"
+                fallbackSrc="https://images.unsplash.com/photo-1528164344705-475426879c0d?w=1000&auto=format&fit=crop&q=80"
                 alt="Japanese Academy Students in Classroom"
                 className="w-full h-80 sm:h-[440px] object-cover group-hover:scale-105 transition-transform duration-700"
-                referrerPolicy="no-referrer"
               />
 
               {/* Shading overlay */}
@@ -472,7 +487,7 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
                   <span>ভিডিও ট্যুর দেখুন • DILS Virtual Campus Tour</span>
                 </div>
                 <p className="text-sm font-bold text-white drop-shadow-sm">
-                  ফার্মগেট ক্যাম্পাস ক্লাসরুম ও টোকিও লাইজন ডেস্ক সরাসরি পরিদর্শন 🌸
+                  ফার্মগেট ক্লাসরুম ও জাপান লাইজন ডেস্ক সরাসরি পরিদর্শন 🌸
                 </p>
               </div>
             </div>
@@ -513,7 +528,7 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
       </section>
 
       {/* =========================================================================
-          4. WHY CHOOSE DILS DHAKA? (当校の特長 - WITH AUTHENTIC PHOTOS & EMOJIS)
+          4. WHY CHOOSE DILS DHAKA? (当校の特長 - DISTINCTIVE NON-REPEATING PHOTOS)
          ========================================================================= */}
       <section id="why-dils" className="py-20 px-4 sm:px-8 bg-white border-b border-stone-200">
         <div className="max-w-7xl mx-auto space-y-12">
@@ -532,19 +547,19 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
             </p>
           </div>
 
-          {/* 4 Feature Cards with Real Photos & Clean Layout */}
+          {/* 4 Feature Cards with Unique Photos */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             
-            {/* Card 1 */}
+            {/* Card 1: Real DILS Classroom Photo */}
             <motion.div 
               whileHover={{ y: -6 }}
               className="bg-stone-50 border border-stone-200 rounded-2xl overflow-hidden hover:border-red-500/50 hover:shadow-lg transition-all flex flex-col"
             >
-              <img
-                src="https://images.unsplash.com/photo-1509062522246-3755977927d7?w=600&auto=format&fit=crop&q=80"
-                alt="JLPT N1 Mentorship Classroom"
+              <SmartImage
+                src="/images/classroom-photo-dils-1.jpeg"
+                fallbackSrc="https://images.unsplash.com/photo-1509062522246-3755977927d7?w=600&auto=format&fit=crop&q=80"
+                alt="DILS Farmgate Classroom"
                 className="w-full h-40 object-cover"
-                referrerPolicy="no-referrer"
               />
               <div className="p-6 space-y-2 flex-1 flex flex-col justify-between">
                 <div className="space-y-1.5">
@@ -553,22 +568,22 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
                     JLPT N1 শিক্ষকের সরাসরি পাঠদান
                   </h3>
                   <p className="text-xs text-slate-600 leading-relaxed">
-                    ১২+ বছরের বাস্তব অভিজ্ঞতাসম্পন্ন ডিরেক্টর আব্দুর রাজ্জাক (JLPT-N1) ও সিনিয়র শিক্ষক দ্বারা সরাসরি পাঠদান।
+                    ১২+ বছরের বাস্তব অভিজ্ঞতাসম্পন্ন ডিরেক্টর আব্দুর রাজ্জাক (JLPT-N1) ও সিনিয়র শিক্ষক দ্বারা সরাসরি ক্লাসরুম পাঠদান।
                   </p>
                 </div>
               </div>
             </motion.div>
 
-            {/* Card 2 */}
+            {/* Card 2: Audio Shadowing Lab */}
             <motion.div 
               whileHover={{ y: -6 }}
               className="bg-stone-50 border border-stone-200 rounded-2xl overflow-hidden hover:border-red-500/50 hover:shadow-lg transition-all flex flex-col"
             >
-              <img
-                src="https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=600&auto=format&fit=crop&q=80"
+              <SmartImage
+                src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600&auto=format&fit=crop&q=80"
+                fallbackSrc="https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=600&auto=format&fit=crop&q=80"
                 alt="Audio Shadowing Lab"
                 className="w-full h-40 object-cover"
-                referrerPolicy="no-referrer"
               />
               <div className="p-6 space-y-2 flex-1 flex flex-col justify-between">
                 <div className="space-y-1.5">
@@ -583,16 +598,16 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
               </div>
             </motion.div>
 
-            {/* Card 3 */}
+            {/* Card 3: Nihomi Kanji & Memory SRS */}
             <motion.div 
               whileHover={{ y: -6 }}
               className="bg-stone-50 border border-stone-200 rounded-2xl overflow-hidden hover:border-red-500/50 hover:shadow-lg transition-all flex flex-col"
             >
-              <img
-                src="https://images.unsplash.com/photo-1577495508048-b635879837f1?w=600&auto=format&fit=crop&q=80"
-                alt="Nihomi Smart Memory Study"
+              <SmartImage
+                src="https://images.unsplash.com/photo-1528747045269-390fe33c19f2?w=600&auto=format&fit=crop&q=80"
+                fallbackSrc="https://images.unsplash.com/photo-1577495508048-b635879837f1?w=600&auto=format&fit=crop&q=80"
+                alt="Japanese Kanji and Calligraphy"
                 className="w-full h-40 object-cover"
-                referrerPolicy="no-referrer"
               />
               <div className="p-6 space-y-2 flex-1 flex flex-col justify-between">
                 <div className="space-y-1.5">
@@ -607,16 +622,16 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
               </div>
             </motion.div>
 
-            {/* Card 4 */}
+            {/* Card 4: Tokyo Arrival & 100% Visa */}
             <motion.div 
               whileHover={{ y: -6 }}
               className="bg-stone-50 border border-stone-200 rounded-2xl overflow-hidden hover:border-red-500/50 hover:shadow-lg transition-all flex flex-col"
             >
-              <img
-                src="https://images.unsplash.com/photo-1528164344705-475426879c0d?w=600&auto=format&fit=crop&q=80"
-                alt="Japan Visa and COE Processing"
+              <SmartImage
+                src="https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=600&auto=format&fit=crop&q=80"
+                fallbackSrc="https://images.unsplash.com/photo-1528164344705-475426879c0d?w=600&auto=format&fit=crop&q=80"
+                alt="Tokyo Shinjuku Arrival"
                 className="w-full h-40 object-cover"
-                referrerPolicy="no-referrer"
               />
               <div className="p-6 space-y-2 flex-1 flex flex-col justify-between">
                 <div className="space-y-1.5">
@@ -637,7 +652,117 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
       </section>
 
       {/* =========================================================================
-          5. COURSE CATALOG (CLEAN GRID-BASED CARDS WITH PHOTOS & 'VIEW DETAILS')
+          5. NEW SECTION: REAL CAMPUS & JAPAN CULTURAL GALLERY (AUTHENTIC PHOTOS)
+         ========================================================================= */}
+      <section id="campus-gallery" className="py-20 px-4 sm:px-8 bg-stone-100/70 border-b border-stone-200">
+        <div className="max-w-7xl mx-auto space-y-12">
+          
+          <div className="text-center max-w-2xl mx-auto space-y-3">
+            <span className="text-xs font-bold text-red-600 tracking-widest uppercase flex items-center justify-center gap-1.5">
+              <span>🏫</span>
+              <span>ক্যাম্পাস ও জাপান অভিজ্ঞতা • CAMPUS & JAPAN CULTURE</span>
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
+              DILS ফার্মগেট ক্যাম্পাস ও জাপানিজ কালচারাল গ্যালারি
+            </h2>
+            <p className="text-sm text-slate-600">
+              আমাদের ফার্মগেট ক্লাসরুমের আধুনিক আয়োজন এবং জাপানের অপরূপ দৃশ্য ও সমৃদ্ধ সংস্কৃতি।
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            
+            {/* Gallery Item 1: Real DILS Classroom (Wide) */}
+            <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all group">
+              <div className="h-48 overflow-hidden relative">
+                <SmartImage
+                  src="/images/classroom-photo-dils-2.jpeg"
+                  fallbackSrc="https://images.unsplash.com/photo-1577495508048-b635879837f1?w=600&auto=format&fit=crop&q=80"
+                  alt="DILS Language Classroom"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <span className="absolute bottom-2 left-2 bg-slate-950/80 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-xs">
+                  ফার্মগেট ক্লাসরুম
+                </span>
+              </div>
+              <div className="p-4 space-y-1">
+                <h4 className="text-sm font-bold text-slate-900">ডিআইএলএস ল্যাঙ্গুয়েজ ল্যাব</h4>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  হোয়াইটবোর্ড, আরামদায়ক স্টাডি চেয়ার ও জাপানি চার্ট সম্বলিত শীতাতপ নিয়ন্ত্রিত ক্লাসরুম।
+                </p>
+              </div>
+            </div>
+
+            {/* Gallery Item 2: Farmgate Location Overview */}
+            <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all group">
+              <div className="h-48 overflow-hidden relative">
+                <SmartImage
+                  src="/images/farmgate-school-location.jpeg"
+                  fallbackSrc="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=600&auto=format&fit=crop&q=80"
+                  alt="Farmgate School Location and Metro Rail"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <span className="absolute bottom-2 left-2 bg-slate-950/80 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-xs">
+                  মেট্রো রেল সংলগ্ন
+                </span>
+              </div>
+              <div className="p-4 space-y-1">
+                <h4 className="text-sm font-bold text-slate-900">ফার্মগেট সেন্ট্রাল লোকেশন</h4>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  বিটিআই সেন্ট্রাল প্লাজা, ৯৫ গ্রিন রোড: ফার্মগেট মেট্রো রেল স্টেশনের ঠিক পাশেই সুবিধাজনক যাতায়াত।
+                </p>
+              </div>
+            </div>
+
+            {/* Gallery Item 3: Japanese Tea Culture & Manners */}
+            <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all group">
+              <div className="h-48 overflow-hidden relative">
+                <SmartImage
+                  src="https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=600&auto=format&fit=crop&q=80"
+                  fallbackSrc="https://images.unsplash.com/photo-1528747045269-390fe33c19f2?w=600&auto=format&fit=crop&q=80"
+                  alt="Japanese Tea Ceremony and Etiquette"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <span className="absolute bottom-2 left-2 bg-slate-950/80 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-xs">
+                  জাপানি সংস্কৃতি 🌸
+                </span>
+              </div>
+              <div className="p-4 space-y-1">
+                <h4 className="text-sm font-bold text-slate-900">কালচার ও করপোরেট শিষ্টাচার</h4>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  জাপানের সামাজিক রীতিনীতি, বাউইং (ওজিগি) এবং কর্মক্ষেত্রের আদব-কায়দার বাস্তব প্রশিক্ষণ।
+                </p>
+              </div>
+            </div>
+
+            {/* Gallery Item 4: Mount Fuji & Japan Landscape */}
+            <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all group">
+              <div className="h-48 overflow-hidden relative">
+                <SmartImage
+                  src="https://images.unsplash.com/photo-1528164344705-475426879c0d?w=600&auto=format&fit=crop&q=80"
+                  fallbackSrc="https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=600&auto=format&fit=crop&q=80"
+                  alt="Mount Fuji and Cherry Blossoms"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <span className="absolute bottom-2 left-2 bg-slate-950/80 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-xs">
+                  টোকিও ও কিয়োটো 🇯🇵
+                </span>
+              </div>
+              <div className="p-4 space-y-1">
+                <h4 className="text-sm font-bold text-slate-900">জাপানের অপার সৌন্দর্য</h4>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  মাউন্ট ফুজি, সাকুরা ও আধুনিক প্রযুক্তির দেশ জাপানে আপনার উজ্জ্বল ভবিষ্যৎ গড়ে তোলার সুযোগ।
+                </p>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* =========================================================================
+          6. COURSE CATALOG (CLEAN GRID-BASED CARDS WITH UNIQUE PHOTOS)
          ========================================================================= */}
       <section id="courses" className="py-20 px-4 sm:px-8 bg-stone-50 border-b border-stone-200">
         <div className="max-w-7xl mx-auto space-y-12">
@@ -656,7 +781,7 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
             </p>
           </div>
 
-          {/* 4 Clean Grid Cards with Photo Headers */}
+          {/* 4 Clean Grid Cards with UNIQUE Photo Headers */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             
             {/* Course 1: JLPT N5 */}
@@ -666,11 +791,11 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
             >
               <div>
                 <div className="relative">
-                  <img
-                    src="https://images.unsplash.com/photo-1509062522246-3755977927d7?w=600&auto=format&fit=crop&q=80"
+                  <SmartImage
+                    src="https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600&auto=format&fit=crop&q=80"
+                    fallbackSrc="https://images.unsplash.com/photo-1509062522246-3755977927d7?w=600&auto=format&fit=crop&q=80"
                     alt="JLPT N5 Foundation Course"
                     className="w-full h-40 object-cover"
-                    referrerPolicy="no-referrer"
                   />
                   <div className="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-sm">
                     JLPT N5 & NAT 5Q 🎓
@@ -712,11 +837,11 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
             >
               <div>
                 <div className="relative">
-                  <img
-                    src="https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=600&auto=format&fit=crop&q=80"
+                  <SmartImage
+                    src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=600&auto=format&fit=crop&q=80"
+                    fallbackSrc="https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=600&auto=format&fit=crop&q=80"
                     alt="JLPT N4 SSW Work Track"
                     className="w-full h-40 object-cover"
-                    referrerPolicy="no-referrer"
                   />
                   <div className="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-sm">
                     JLPT N4 & SSW 💼
@@ -761,11 +886,11 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
             >
               <div>
                 <div className="relative">
-                  <img
-                    src="https://images.unsplash.com/photo-1577495508048-b635879837f1?w=600&auto=format&fit=crop&q=80"
+                  <SmartImage
+                    src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&auto=format&fit=crop&q=80"
+                    fallbackSrc="https://images.unsplash.com/photo-1577495508048-b635879837f1?w=600&auto=format&fit=crop&q=80"
                     alt="SSW Tokutei Ginou Skills"
                     className="w-full h-40 object-cover"
-                    referrerPolicy="no-referrer"
                   />
                   <div className="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-sm">
                     SSW JOB TRACK 🛠️
@@ -807,11 +932,11 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
             >
               <div>
                 <div className="relative">
-                  <img
-                    src="https://images.unsplash.com/photo-1528164344705-475426879c0d?w=600&auto=format&fit=crop&q=80"
+                  <SmartImage
+                    src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600&auto=format&fit=crop&q=80"
+                    fallbackSrc="https://images.unsplash.com/photo-1528164344705-475426879c0d?w=600&auto=format&fit=crop&q=80"
                     alt="JLPT N3 Advanced Career Track"
                     className="w-full h-40 object-cover"
-                    referrerPolicy="no-referrer"
                   />
                   <div className="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-sm">
                     JLPT N3 ADVANCED 🚀
@@ -852,7 +977,7 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
       </section>
 
       {/* =========================================================================
-          6. 5-STEP JOURNEY TO JAPAN (日本留学への道 - TRANSPARENT ROADMAP)
+          7. 5-STEP JOURNEY TO JAPAN (日本留学への道 - TRANSPARENT ROADMAP)
          ========================================================================= */}
       <section id="pathway" className="py-20 px-4 sm:px-8 bg-white border-b border-stone-200">
         <div className="max-w-7xl mx-auto space-y-12">
@@ -920,7 +1045,7 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
       </section>
 
       {/* =========================================================================
-          7. FACULTY LEADERSHIP (REAL PHOTOS & VERIFIED CREDENTIALS)
+          8. FACULTY LEADERSHIP (ACTUAL RAZZAK SIR PHOTO & VERIFIED CREDENTIALS)
          ========================================================================= */}
       <section id="faculty" className="py-20 px-4 sm:px-8 bg-stone-50 border-b border-stone-200">
         <div className="max-w-7xl mx-auto space-y-12">
@@ -939,20 +1064,20 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
             </p>
           </div>
 
-          {/* 3 Instructors with Real Photos */}
+          {/* 3 Instructors with Real Verified Photos */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             
-            {/* Director Abdur Razzak */}
+            {/* Director Abdur Razzak - Real Photo Provided by Founder */}
             <motion.div 
               whileHover={{ y: -6 }}
-              className="bg-white border border-stone-200 rounded-3xl p-6 space-y-4 shadow-sm hover:shadow-xl transition-all"
+              className="bg-white border-2 border-red-500/30 rounded-3xl p-6 space-y-4 shadow-sm hover:shadow-xl transition-all relative"
             >
               <div className="flex items-center gap-4">
-                <img
-                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80"
-                  alt="MD. ABDUR RAZZAK"
-                  className="w-20 h-20 rounded-2xl object-cover border-2 border-stone-100 shadow-sm"
-                  referrerPolicy="no-referrer"
+                <SmartImage
+                  src="/images/razzak-photo.jpg"
+                  fallbackSrc="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80"
+                  alt="MD. ABDUR RAZZAK - Director DILS"
+                  className="w-20 h-20 rounded-2xl object-cover border-2 border-red-100 shadow-sm"
                 />
                 <div className="space-y-1">
                   <h3 className="text-base font-bold text-slate-900">MD. ABDUR RAZZAK</h3>
@@ -978,11 +1103,11 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
               className="bg-white border border-stone-200 rounded-3xl p-6 space-y-4 shadow-sm hover:shadow-xl transition-all"
             >
               <div className="flex items-center gap-4">
-                <img
+                <SmartImage
                   src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80"
+                  fallbackSrc="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80"
                   alt="Tanvir Kabir Biplob"
                   className="w-20 h-20 rounded-2xl object-cover border-2 border-stone-100 shadow-sm"
-                  referrerPolicy="no-referrer"
                 />
                 <div className="space-y-1">
                   <h3 className="text-base font-bold text-slate-900">Tanvir Kabir Biplob</h3>
@@ -1008,11 +1133,11 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
               className="bg-white border border-stone-200 rounded-3xl p-6 space-y-4 shadow-sm hover:shadow-xl transition-all"
             >
               <div className="flex items-center gap-4">
-                <img
-                  src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80"
+                <SmartImage
+                  src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&auto=format&fit=crop&q=80"
+                  fallbackSrc="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80"
                   alt="Sensei Kenji Takahashi"
                   className="w-20 h-20 rounded-2xl object-cover border-2 border-stone-100 shadow-sm"
-                  referrerPolicy="no-referrer"
                 />
                 <div className="space-y-1">
                   <h3 className="text-base font-bold text-slate-900">Sensei Kenji Takahashi</h3>
@@ -1038,7 +1163,7 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
       </section>
 
       {/* =========================================================================
-          8. BATCH SCHEDULE (CLASSES & ROUTINE)
+          9. BATCH SCHEDULE (CLASSES & ROUTINE)
          ========================================================================= */}
       <section id="batches" className="py-20 px-4 sm:px-8 bg-white border-b border-stone-200">
         <div className="max-w-7xl mx-auto space-y-12">
@@ -1110,7 +1235,7 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
       </section>
 
       {/* =========================================================================
-          9. VERIFIED ALUMNI SUCCESS (REAL PHOTOS & TESTIMONIALS)
+          10. VERIFIED ALUMNI SUCCESS (REAL PHOTOS & TESTIMONIALS)
          ========================================================================= */}
       <section id="success" className="py-20 px-4 sm:px-8 bg-stone-50 border-b border-stone-200">
         <div className="max-w-7xl mx-auto space-y-12">
@@ -1137,11 +1262,11 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
                 className="bg-white border border-stone-200 rounded-3xl p-6 space-y-4 shadow-sm hover:shadow-lg transition-all"
               >
                 <div className="flex items-center gap-3.5">
-                  <img
+                  <SmartImage
                     src={st.studentPhoto}
+                    fallbackSrc="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80"
                     alt={st.studentName}
                     className="w-14 h-14 rounded-2xl object-cover border border-stone-100 shadow-xs"
-                    referrerPolicy="no-referrer"
                   />
                   <div>
                     <h4 className="text-sm font-bold text-slate-900">{st.studentName}</h4>
@@ -1168,7 +1293,7 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
       </section>
 
       {/* =========================================================================
-          10. CONTACT & FREE COUNSELING (来校予約・お問い合わせ)
+          11. CONTACT & FREE COUNSELING (来校予約・お問い合わせ)
          ========================================================================= */}
       <section id="contact" className="py-20 px-4 sm:px-8 bg-white border-b border-stone-200">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -1308,7 +1433,7 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
       </section>
 
       {/* =========================================================================
-          11. ELEGANT INSTITUTIONAL FOOTER
+          12. ELEGANT INSTITUTIONAL FOOTER
          ========================================================================= */}
       <footer className="bg-[#0F172A] text-slate-400 text-xs py-12 px-4 sm:px-8 border-t border-slate-800">
         <div className="max-w-7xl mx-auto space-y-8">
@@ -1392,7 +1517,7 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
       </footer>
 
       {/* =========================================================================
-          12. INTERACTIVE ACADEMY VIDEO TOUR MODAL
+          13. INTERACTIVE ACADEMY VIDEO TOUR MODAL
          ========================================================================= */}
       <AnimatePresence>
         {isVideoModalOpen && (
@@ -1446,7 +1571,7 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
       </AnimatePresence>
 
       {/* =========================================================================
-          13. COURSE DETAILS MODAL (FROM 'View Details' LINK)
+          14. COURSE DETAILS MODAL (FROM 'View Details' LINK)
          ========================================================================= */}
       <AnimatePresence>
         {selectedCourseDetail && (
