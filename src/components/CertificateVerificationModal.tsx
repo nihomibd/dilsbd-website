@@ -371,17 +371,15 @@ export const CertificateVerificationModal: React.FC<CertificateVerificationModal
               <div className="absolute top-4 right-4 text-xs font-mono font-bold text-amber-900/40">{activeCert.certificateId}</div>
               
               {/* Center Background Seal Watermark */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
-                <div className="w-96 h-96 rounded-full border-8 border-amber-900 flex items-center justify-center text-8xl font-black">
-                  DILS
-                </div>
+              <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
+                <img src="/images/dils-logo.svg" alt="" className="w-80 h-80 object-contain" />
               </div>
 
               {/* Certificate Header */}
               <div className="text-center space-y-2 relative z-10">
                 <div className="flex items-center justify-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-red-700 text-white flex items-center justify-center font-black text-xl shadow">
-                    DILS
+                  <div className="w-14 h-14 rounded-full bg-white p-0.5 border-2 border-red-600 shadow-md flex items-center justify-center overflow-hidden">
+                    <img src="/images/dils-logo.svg" alt="DILS Seal" className="w-full h-full object-contain" />
                   </div>
                   <div>
                     <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 font-sans">

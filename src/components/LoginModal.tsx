@@ -202,8 +202,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
         {/* Modal Header */}
         <div className="space-y-2 text-center">
-          <div className="w-12 h-12 mx-auto rounded-2xl bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-400">
-            <Lock className="w-6 h-6" />
+          <div className="w-16 h-16 mx-auto rounded-full bg-white p-1 border-2 border-red-500/40 shadow-xl flex items-center justify-center overflow-hidden">
+            <img 
+              src="/images/dils-logo.svg" 
+              alt="DILS Logo" 
+              className="w-full h-full object-contain"
+              referrerPolicy="no-referrer" 
+            />
           </div>
           <h3 className="text-xl font-black text-white">
             {lang === 'bn' ? 'নিরাপদ পোর্টাল লগইন' : 'Secure Portal Sign In'}

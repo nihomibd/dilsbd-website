@@ -82,7 +82,7 @@ export const PortalAdminCRM: React.FC<PortalAdminCRMProps> = ({
   const [cardId, setCardId] = useState('DILS-DIR-2026-001');
   const [cardBlood, setCardBlood] = useState('B+');
   const [cardDept, setCardDept] = useState('Japanese Language & Visa Administration');
-  const [cardPhoto, setCardPhoto] = useState('https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&auto=format&fit=crop&q=80');
+  const [cardPhoto, setCardPhoto] = useState('/images/razzak-photo.svg');
   const [isFlipped, setIsFlipped] = useState(false);
 
   // Student 360 & Counselor Call Logger state
@@ -1315,8 +1315,8 @@ export const PortalAdminCRM: React.FC<PortalAdminCRMProps> = ({
                 {/* Header with DILS Brand */}
                 <div className="text-center pt-2">
                   <div className="flex items-center justify-center gap-2 mb-1">
-                    <div className="w-7 h-7 rounded-lg bg-red-600 flex items-center justify-center text-white font-black text-xs">
-                      DILS
+                    <div className="w-8 h-8 rounded-full bg-white p-0.5 border border-red-500/50 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
+                      <img src="/images/dils-logo.svg" alt="DILS Logo" className="w-full h-full object-contain" />
                     </div>
                     <span className="font-extrabold text-white text-sm tracking-tight">DILS DHAKA</span>
                   </div>

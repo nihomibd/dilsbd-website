@@ -1110,17 +1110,17 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
           {/* 3 Instructors with Real Verified Photos */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             
-            {/* Director Abdur Razzak - Real Photo Provided by Founder */}
+            {/* Director Abdur Razzak - Real Official Photo */}
             <motion.div 
               whileHover={{ y: -6 }}
-              className="bg-white border-2 border-red-500/30 rounded-3xl p-6 space-y-4 shadow-sm hover:shadow-xl transition-all relative"
+              className="bg-white border-2 border-red-500/40 rounded-3xl p-6 space-y-4 shadow-sm hover:shadow-xl transition-all relative"
             >
               <div className="flex items-center gap-4">
                 <SmartImage
-                  src="/images/razzak-photo.jpg"
-                  fallbackSrc="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80"
+                  src="/images/razzak-photo.svg"
+                  fallbackSrc="/images/razzak-photo.jpg"
                   alt="MD. ABDUR RAZZAK - Director DILS"
-                  className="w-20 h-20 rounded-2xl object-cover border-2 border-red-100 shadow-sm"
+                  className="w-20 h-20 rounded-2xl object-cover border-2 border-red-200 shadow-md bg-stone-100"
                 />
                 <div className="space-y-1">
                   <h3 className="text-base font-bold text-slate-900">MD. ABDUR RAZZAK</h3>
@@ -1202,6 +1202,101 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
 
           </div>
 
+        </div>
+      </section>
+
+      {/* =========================================================================
+          8.5. DIRECTOR'S DESK: MESSAGE FROM MD. ABDUR RAZZAK
+         ========================================================================= */}
+      <section id="director" className="py-20 px-4 sm:px-8 bg-slate-950 text-white border-b border-slate-800 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-slate-900/90 border-2 border-red-500/30 rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+              
+              {/* Director Photo & Official Seal Badge */}
+              <div className="lg:col-span-4 flex flex-col items-center text-center space-y-4">
+                <div className="relative group">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-amber-500 rounded-3xl blur opacity-30 group-hover:opacity-60 transition duration-500"></div>
+                  <div className="relative w-48 sm:w-56 h-64 sm:h-72 rounded-2xl overflow-hidden border-2 border-red-500/50 bg-slate-950 shadow-2xl">
+                    <img
+                      src="/images/razzak-photo.svg"
+                      alt="MD. ABDUR RAZZAK - Academy Director, DILS"
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                  {/* DILS Official Circular Seal Badge */}
+                  <div className="absolute -bottom-3 -right-3 w-14 h-14 rounded-full bg-white p-1 border-2 border-red-600 shadow-xl flex items-center justify-center">
+                    <img 
+                      src="/images/dils-logo.svg" 
+                      alt="DILS Seal" 
+                      className="w-full h-full object-contain"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <h3 className="text-xl font-black text-white">MD. ABDUR RAZZAK</h3>
+                  <div className="text-xs font-bold text-red-400 font-mono">
+                    Academy Director &amp; Senior Japanese Trainer (JLPT N1)
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    ঢাকা ইন্টারন্যাশনাল ল্যাঙ্গুয়েজ স্কুল ও ভিসা সেন্টার
+                  </p>
+                </div>
+              </div>
+
+              {/* Director's Official Statement & Mission */}
+              <div className="lg:col-span-8 space-y-5">
+                <div className="inline-flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-amber-400 bg-amber-950/60 border border-amber-800/80 px-3 py-1 rounded-full">
+                  <span>🏛️ DIRECTOR'S STATEMENT • পরিচালক মহোদয়ের বার্তা</span>
+                </div>
+
+                <h2 className="text-2xl sm:text-3xl font-black text-white leading-tight">
+                  "সঠিক জাপানি ভাষা ও বিশ্বস্ত নির্দেশনার ওপর ভিত্তি করেই গড়ে ওঠে জাপানের উজ্জ্বল ভবিষ্যৎ।"
+                </h2>
+
+                <div className="space-y-3 text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  <p>
+                    বিগত এক যুগেরও বেশি সময় ধরে আমরা নিষ্ঠা ও সততার সাথে বাংলাদেশি শিক্ষার্থীদের জাপানের শীর্ষস্থানীয় ল্যাঙ্গুয়েজ স্কুল, ভোকেশনাল কলেজ, বিশ্ববিদ্যালয় এবং কোম্পানিতে সফলভাবে পৌঁছানোর কাজ করছি।
+                  </p>
+                  <p>
+                    জাপানে উচ্চশিক্ষার জন্য কেবল একটি ভর্তি ফরম পূরণ করাই যথেষ্ট নয়; জাপানের ইমিগ্রেশন ও এম্বাসির শর্তানুযায়ী বাস্তবসম্মত জাপানি ভাষা দক্ষতা (JLPT/NAT), নিখুঁত ব্যাংক স্পনসর ডকুমেন্টেশন এবং আত্মবিশ্বাসী ইন্টারভিউ প্রস্তুতিই হচ্ছে শতভাগ ভিসা ও সিওই (COE) পাওয়ার মূল চাবিকাঠি।
+                  </p>
+                  <p className="text-amber-200/90 font-medium">
+                    আমাদের ফার্মগেট ক্যাম্পাসে প্রতিটি শিক্ষার্থীকে ব্যক্তিগতভাবে নিরীক্ষণ ও নিবিড় মেন্টরিং দেওয়া হয়। আপনার জাপান যাত্রায় DILS পরিবার সর্বদা অভিভাবক হয়ে আপনার পাশে রয়েছে।
+                  </p>
+                </div>
+
+                <div className="pt-4 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[11px] text-slate-400 font-mono block">সরাসরি পরিচালকের সাথে যোগাযোগ:</span>
+                    <div className="flex items-center gap-3 font-mono text-xs text-white">
+                      <span className="text-emerald-400 font-bold">+880 1711-239845</span>
+                      <span>•</span>
+                      <span className="text-slate-300">+880 1764-395945</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <a
+                      href="https://wa.me/8801711239845?text=আসসালামু%20আলাইকুম%20রাজ্জাক%20স্যার,%20আমি%20DILS%20থেকে%20জাপান%20ভিসা%20ও%20কোর্স%20সম্পর্কে%20জানতে%20চাই।"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-950/50 transition-all cursor-pointer inline-flex items-center gap-2"
+                    >
+                      <span>পরিচালক স্যারকে WhatsApp করুন</span>
+                      <span>📲</span>
+                    </a>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1484,11 +1579,19 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-8 border-b border-slate-800">
             
             <div className="space-y-3 md:col-span-2">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-red-600 text-white font-bold text-sm flex items-center justify-center font-serif">
-                  語学
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-full bg-white p-0.5 border-2 border-red-500/40 flex items-center justify-center shrink-0 overflow-hidden shadow-md">
+                  <img 
+                    src="/images/dils-logo.svg" 
+                    alt="DILS Logo" 
+                    className="w-full h-full object-contain"
+                    referrerPolicy="no-referrer"
+                  />
                 </div>
-                <span className="text-white font-black text-base tracking-tight">DILS Dhaka</span>
+                <div>
+                  <span className="text-white font-black text-base tracking-tight block">DILS Dhaka</span>
+                  <span className="text-[10px] text-slate-400 font-mono">Dhaka International Language School</span>
+                </div>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed max-w-md">
                 ঢাকা ইন্টারন্যাশনাল ল্যাঙ্গুয়েজ স্কুল (DILS) — জাপানি ভাষা শিক্ষা ও জাপানে উচ্চশিক্ষা ও কর্মসংস্থানে বাংলাদেশের অন্যতম শীর্ষস্থানীয় ও বিশ্বস্ত একাডেমি।

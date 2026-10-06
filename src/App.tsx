@@ -462,15 +462,20 @@ export default function App() {
         <footer className="border-t border-slate-900 bg-slate-950 text-xs text-slate-500 py-10 px-4 sm:px-6">
           <div className="max-w-7xl mx-auto space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-6 border-b border-slate-900 text-xs">
-              <div>
-                <span className="text-white font-bold text-sm block mb-1">
-                  Dhaka International Language School & Visa Center (DILS)
-                </span>
-                <p className="text-slate-400 text-[11px] leading-relaxed">
-                  {DILS_INFO.address}
-                </p>
-                <div className="mt-2 text-[11px] text-slate-400">
-                  অফিসিয়াল ওয়েবসাইট: <a href="https://www.dilsbd.com" target="_blank" rel="noreferrer" className="text-white hover:text-red-400 font-semibold underline">dilsbd.com</a>
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-white p-0.5 border border-red-500/40 shrink-0 overflow-hidden flex items-center justify-center shadow-md">
+                  <img src="/images/dils-logo.svg" alt="DILS Logo" className="w-full h-full object-contain" />
+                </div>
+                <div>
+                  <span className="text-white font-bold text-sm block mb-1">
+                    Dhaka International Language School & Visa Center (DILS)
+                  </span>
+                  <p className="text-slate-400 text-[11px] leading-relaxed">
+                    {DILS_INFO.address}
+                  </p>
+                  <div className="mt-2 text-[11px] text-slate-400">
+                    অফিসিয়াল ওয়েবসাইট: <a href="https://www.dilsbd.com" target="_blank" rel="noreferrer" className="text-white hover:text-red-400 font-semibold underline">dilsbd.com</a>
+                  </div>
                 </div>
               </div>
 
