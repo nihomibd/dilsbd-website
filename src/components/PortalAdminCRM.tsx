@@ -82,7 +82,7 @@ export const PortalAdminCRM: React.FC<PortalAdminCRMProps> = ({
   const [cardId, setCardId] = useState('DILS-DIR-2026-001');
   const [cardBlood, setCardBlood] = useState('B+');
   const [cardDept, setCardDept] = useState('Japanese Language & Visa Administration');
-  const [cardPhoto, setCardPhoto] = useState('/images/razzak-photo.svg');
+  const [cardPhoto, setCardPhoto] = useState('/images/razzak-photo.jpg');
   const [isFlipped, setIsFlipped] = useState(false);
 
   // Student 360 & Counselor Call Logger state

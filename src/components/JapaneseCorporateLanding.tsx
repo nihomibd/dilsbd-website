@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Building2, 
@@ -92,6 +92,74 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [selectedCourseDetail, setSelectedCourseDetail] = useState<Course | null>(null);
+
+  // Persistent Director Photo & Official School Logo state
+  const [directorPhoto, setDirectorPhoto] = useState<string>(() => {
+    return localStorage.getItem('dils_director_photo') || '/images/razzak-photo.jpg';
+  });
+
+  const [schoolLogo, setSchoolLogo] = useState<string>(() => {
+    return localStorage.getItem('dils_school_logo') || '/images/dils-logo.svg';
+  });
+
+  // Sync latest persisted settings from server SQLite if available
+  useEffect(() => {
+    fetch('/api/settings/director_photo')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.value) {
+          setDirectorPhoto(data.value);
+          localStorage.setItem('dils_director_photo', data.value);
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/settings/school_logo')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.value) {
+          setSchoolLogo(data.value);
+          localStorage.setItem('dils_school_logo', data.value);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleDirectorPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        setDirectorPhoto(result);
+        localStorage.setItem('dils_director_photo', result);
+        fetch('/api/settings/director_photo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value: result })
+        }).catch(() => {});
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSchoolLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        setSchoolLogo(result);
+        localStorage.setItem('dils_school_logo', result);
+        fetch('/api/settings/school_logo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value: result })
+        }).catch(() => {});
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   // Quick Consultation Form State
   const [consultName, setConsultName] = useState('');
@@ -243,9 +311,25 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
           
           {/* Logo & School Identity */}
           <a href="#" className="flex items-center gap-3.5 group select-none">
-            <div className="w-12 h-12 rounded-xl bg-red-600 flex flex-col items-center justify-center text-white shadow-md shadow-red-600/25 font-bold leading-none">
-              <span className="text-lg font-serif">語学</span>
-              <span className="text-[9px] font-mono tracking-wider">DILS</span>
+            <div className="w-14 h-14 rounded-full bg-white p-0.5 border-2 border-red-500/50 flex items-center justify-center shrink-0 overflow-hidden shadow-md group-hover:scale-105 transition-transform relative">
+              <img 
+                src={schoolLogo} 
+                alt="Dhaka International Language School (DILS) Logo" 
+                className="w-full h-full object-contain"
+                referrerPolicy="no-referrer"
+              />
+              <label 
+                className="absolute inset-0 bg-black/60 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer text-white"
+                title="লোগো পরিবর্তন করুন (Upload DILS Logo.jpg)"
+              >
+                <Camera className="w-4 h-4 text-white" />
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleSchoolLogoChange} 
+                  className="hidden" 
+                />
+              </label>
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -1117,7 +1201,7 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
             >
               <div className="flex items-center gap-4">
                 <SmartImage
-                  src="/images/razzak-photo.svg"
+                  src={directorPhoto}
                   fallbackSrc="/images/razzak-photo.jpg"
                   alt="MD. ABDUR RAZZAK - Director DILS"
                   className="w-20 h-20 rounded-2xl object-cover border-2 border-red-200 shadow-md bg-stone-100"
@@ -1220,16 +1304,32 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
                   <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-amber-500 rounded-3xl blur opacity-30 group-hover:opacity-60 transition duration-500"></div>
                   <div className="relative w-48 sm:w-56 h-64 sm:h-72 rounded-2xl overflow-hidden border-2 border-red-500/50 bg-slate-950 shadow-2xl">
                     <img
-                      src="/images/razzak-photo.svg"
+                      src={directorPhoto}
                       alt="MD. ABDUR RAZZAK - Academy Director, DILS"
                       className="w-full h-full object-cover"
                       referrerPolicy="no-referrer"
                     />
+
+                    {/* Quick Image Upload Overlay */}
+                    <label 
+                      className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 cursor-pointer text-white p-3 text-center"
+                      title="রাজ্জাক স্যারের ছবি পরিবর্তন বা আপলোড করুন"
+                    >
+                      <Camera className="w-7 h-7 text-amber-400" />
+                      <span className="text-xs font-bold">ছবি আপলোড করুন</span>
+                      <span className="text-[10px] text-slate-300 font-mono">(Select Razzak Photo.jpg)</span>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={handleDirectorPhotoChange} 
+                        className="hidden" 
+                      />
+                    </label>
                   </div>
                   {/* DILS Official Circular Seal Badge */}
                   <div className="absolute -bottom-3 -right-3 w-14 h-14 rounded-full bg-white p-1 border-2 border-red-600 shadow-xl flex items-center justify-center">
                     <img 
-                      src="/images/dils-logo.svg" 
+                      src={schoolLogo} 
                       alt="DILS Seal" 
                       className="w-full h-full object-contain"
                       referrerPolicy="no-referrer"
@@ -1582,7 +1682,7 @@ export const JapaneseCorporateLanding: React.FC<JapaneseCorporateLandingProps> =
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 rounded-full bg-white p-0.5 border-2 border-red-500/40 flex items-center justify-center shrink-0 overflow-hidden shadow-md">
                   <img 
-                    src="/images/dils-logo.svg" 
+                    src={schoolLogo} 
                     alt="DILS Logo" 
                     className="w-full h-full object-contain"
                     referrerPolicy="no-referrer"

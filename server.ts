@@ -294,6 +294,12 @@ async function initializeDatabase() {
       notes TEXT,
       updated_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
   `);
 
   // Seed default staff & student users if users table is empty
@@ -2572,6 +2578,75 @@ app.get('/api/courses', (req: Request, res: Response) => {
     success: true,
     data: SEED_COURSES
   });
+});
+
+// 13. System Settings (Director Photo, Brand Logo, etc.)
+app.get('/api/settings/:key', (req: Request, res: Response) => {
+  try {
+    const { key } = req.params;
+    const stmt = db.prepare('SELECT value FROM app_settings WHERE key = ?');
+    stmt.bind([key]);
+    let value = null;
+    if (stmt.step()) {
+      const row = stmt.getAsObject();
+      value = row.value;
+    }
+    stmt.free();
+    res.json({ success: true, key, value });
+  } catch (err: any) {
+    res.json({ success: true, key: req.params.key, value: null });
+  }
+});
+
+app.post('/api/settings/:key', (req: Request, res: Response) => {
+  try {
+    const { key } = req.params;
+    const { value } = req.body;
+    if (!value) {
+      res.status(400).json({ success: false, error: 'Value is required' });
+      return;
+    }
+    const now = new Date().toISOString();
+    db.run(
+      `INSERT INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)
+       ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = ?`,
+      [key, value, now, value, now]
+    );
+    persistDatabase();
+
+    // If setting is director_photo and value is base64 data url, write to disk
+    if (key === 'director_photo' && typeof value === 'string' && value.startsWith('data:image')) {
+      try {
+        const base64Data = value.replace(/^data:image\/\w+;base64,/, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+        const imgPath1 = path.join(process.cwd(), 'public/images/razzak-photo.jpg');
+        const imgPath2 = path.join(process.cwd(), 'public/razzak-photo.jpg');
+        fs.writeFileSync(imgPath1, buffer);
+        fs.writeFileSync(imgPath2, buffer);
+      } catch (fileErr) {
+        console.warn('Failed to save photo buffer to disk:', fileErr);
+      }
+    }
+
+    // If setting is school_logo and value is base64 data url, write to disk
+    if (key === 'school_logo' && typeof value === 'string' && value.startsWith('data:image')) {
+      try {
+        const base64Data = value.replace(/^data:image\/\w+;base64,/, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+        const imgPath1 = path.join(process.cwd(), 'public/images/dils-logo.png');
+        const imgPath2 = path.join(process.cwd(), 'public/dils-logo.png');
+        fs.writeFileSync(imgPath1, buffer);
+        fs.writeFileSync(imgPath2, buffer);
+      } catch (fileErr) {
+        console.warn('Failed to save logo buffer to disk:', fileErr);
+      }
+    }
+
+    res.json({ success: true, key });
+  } catch (err: any) {
+    console.error('Settings save error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 /* =========================================================================

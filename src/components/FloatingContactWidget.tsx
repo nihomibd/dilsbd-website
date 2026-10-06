@@ -52,8 +52,8 @@ export const FloatingContactWidget: React.FC<FloatingContactWidgetProps> = ({
           <div className="bg-slate-900/90 border border-red-950 p-3.5 rounded-2xl space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-red-600/20 border border-red-500/40 flex items-center justify-center text-red-400 font-bold text-xs">
-                  N1
+                <div className="w-10 h-10 rounded-xl overflow-hidden border border-red-500/50 shrink-0 bg-slate-900 shadow-sm">
+                  <img src="/images/razzak-photo.jpg" alt={DILS_INFO.director} className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <h5 className="text-xs font-bold text-white">{DILS_INFO.director}</h5>
